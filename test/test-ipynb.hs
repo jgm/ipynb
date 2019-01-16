@@ -1,5 +1,7 @@
 module Main where
-import System.Exit
+import Test.Tasty
+import Test.Tasty.HUnit
 
 main :: IO ()
-main = exitWith ExitSuccess
+main = defaultMain $ testGroup "unit tests" []
+
