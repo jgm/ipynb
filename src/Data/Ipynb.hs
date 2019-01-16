@@ -39,6 +39,7 @@ import Control.Applicative ((<|>))
 import qualified Data.ByteString.Base64 as Base64
 import GHC.Generics
 import Control.Monad (when)
+import Data.Char (isSpace)
 
 type MimeType = Text
 
@@ -321,14 +322,14 @@ pairToMimeData :: (MimeType, Value) -> Aeson.Parser (MimeType, MimeData)
 pairToMimeData ("application/json", v) =
   return $ ("application/json", JsonData v)
 pairToMimeData (mt, v) = do
+  t <- parseJSON v <|> (mconcat <$> parseJSON v)
   let mimeprefix = T.takeWhile (/='/') mt
-  if mimeprefix == "image" || mimeprefix == "video"
-     then do
-       t <- parseJSON v <|> (mconcat <$> parseJSON v)
-       return (mt, BinaryData (Base64.decodeLenient . TE.encodeUtf8 $ t))
-     else do
-       t <- parseJSON v <|> (mconcat <$> parseJSON v)
-       return $ (mt, TextualData t)
+  if mimeprefix == "text"
+     then return (mt, TextualData t)
+     else
+       case Base64.decode (TE.encodeUtf8 (T.filter (not . isSpace) t)) of
+            Left _ -> return (mt, TextualData t)
+            Right b -> return (mt, BinaryData b)
 
 instance ToJSON MimeBundle where
   toJSON (MimeBundle m) =
