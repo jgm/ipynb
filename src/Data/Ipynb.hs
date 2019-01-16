@@ -356,7 +356,7 @@ breakLines :: Text -> [Text]
 breakLines t =
   let (x, y) = T.break (=='\n') t
   in  case T.uncons y of
-         Nothing -> [x]
+         Nothing -> if T.null x then [] else [x]
          Just (c, rest) -> (x <> T.singleton c) : breakLines rest
 
 {- --- for testing only:
