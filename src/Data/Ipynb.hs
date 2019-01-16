@@ -18,6 +18,7 @@ module Data.Ipynb ( Notebook(..)
                   , Source(..)
                   , CellType(..)
                   , Output(..)
+                  , MimeType
                   , MimeData(..)
                   , MimeBundle(..)
                   , breakLines
