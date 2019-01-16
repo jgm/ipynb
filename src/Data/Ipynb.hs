@@ -22,7 +22,6 @@ module Data.Ipynb ( Notebook(..)
                   , MimeData(..)
                   , MimeBundle(..)
                   , breakLines
-                  , encodeNotebook
                   )
 where
 import Prelude
@@ -35,8 +34,6 @@ import qualified Data.Text as T
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
 import Data.Aeson as Aeson
-import Data.Aeson.Encode.Pretty (Config(..), defConfig, encodePretty',
-                                 keyOrder, Indent(Spaces))
 import qualified Data.Aeson.Types as Aeson
 import Control.Applicative ((<|>))
 import qualified Data.ByteString.Base64 as Base64
@@ -44,17 +41,6 @@ import GHC.Generics
 import Control.Monad (when)
 
 type MimeType = Text
-
-encodeNotebook :: ToJSON (Notebook a) => Notebook a -> Text
-encodeNotebook = TE.decodeUtf8 . BL.toStrict .
-  encodePretty' defConfig{
-      confIndent  = Spaces 1,
-      confCompare = keyOrder
-           [ "cells", "nbformat", "nbformat_minor",
-             "cell_type", "output_type",
-             "execution_count", "metadata",
-             "outputs", "source",
-             "data", "name", "text" ] }
 
 data NbV3
 data NbV4

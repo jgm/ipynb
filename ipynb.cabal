@@ -22,7 +22,6 @@ library
                        unordered-containers,
                        base64-bytestring,
                        aeson,
-                       aeson-pretty,
                        bytestring,
                        text
   hs-source-dirs:      src
@@ -39,7 +38,6 @@ test-suite test-ipynb
                        tasty-hunit,
                        tasty-golden,
                        aeson,
-                       aeson-pretty,
                        bytestring,
                        text
   hs-source-dirs:      test
