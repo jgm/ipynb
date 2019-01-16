@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Data.Ipynb
-import Data.Aeson (Value(..), eitherDecode, encode)
+import Data.Aeson (Value(..), eitherDecode, encode, decode)
 import Data.Aeson.Diff
 import System.Environment
 import System.FilePath
@@ -11,9 +11,10 @@ import Test.Tasty
 import Test.Tasty.HUnit
 import System.Directory
 import Data.Text.IO as T
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import Lens.Micro
 import Lens.Micro.Aeson
-import qualified Data.Text as T
 import qualified Data.HashMap.Strict as HM
 import qualified Data.ByteString.Base64 as Base64
 
@@ -37,17 +38,20 @@ normalizeBase64 bs =
                           "text/" `T.isPrefixOf` k
                           then v
                           else case v of
-                            String t -> String $ (T.replace "\n" "" t) <> "\n"
+                            String t ->
+                              String $ TE.decodeUtf8 .
+                              Base64.joinWith "\n" 76 .
+                              TE.encodeUtf8 .
+                              T.replace "\n" "" $ t
                             _ -> v)
+
 rtTest :: FilePath -> TestTree
 rtTest fp = testCase fp $ do
   inRaw <- BL.readFile fp
-  (inJSON :: Value) <- either error return $ eitherDecode inRaw
-  (nb :: Notebook NbV4) <- either error return $ eitherDecode
-                             $ normalizeBase64 inRaw
+  (inJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 inRaw
+  (nb :: Notebook NbV4) <- either error return $ eitherDecode inRaw
   let outRaw = encode nb
-  (outJSON :: Value) <- either error return $ eitherDecode
-                             $ normalizeBase64 outRaw
+  (outJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 outRaw
   -- test that (read . write) == id
   let patch = diff inJSON outJSON
   assertBool (show patch) (patch == Patch [])
