@@ -343,8 +343,7 @@ pairToMimeData (mt, v) = do
 instance ToJSON MimeBundle where
   toJSON (MimeBundle m) =
     let mimeBundleToValue (BinaryData bs) =
-          toJSON (breakLines $ TE.decodeUtf8 $ Base64.joinWith "\n" 64 $
-                  Base64.encode bs)
+          toJSON $ TE.decodeUtf8 . Base64.joinWith "\n" 76 . Base64.encode $ bs
         mimeBundleToValue (JsonData v) = v
         mimeBundleToValue (TextualData t) = toJSON (breakLines t)
     in  toJSON $ M.map mimeBundleToValue m
