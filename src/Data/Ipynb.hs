@@ -332,13 +332,17 @@ instance FromJSON MimeBundle where
     return $ MimeBundle $ M.fromList m
 
 pairToMimeData :: (MimeType, Value) -> Aeson.Parser (MimeType, MimeData)
-pairToMimeData ("text/plain", v) = do
-  t <- parseJSON v <|> (mconcat <$> parseJSON v)
-  return $ ("text/plain", TextualData t)
-pairToMimeData ("application/json", v) = return $ ("application/json", JsonData v)
+pairToMimeData ("application/json", v) =
+  return $ ("application/json", JsonData v)
 pairToMimeData (mt, v) = do
-  t <- parseJSON v <|> (mconcat <$> parseJSON v)
-  return (mt, BinaryData (Base64.decodeLenient . TE.encodeUtf8 $ t))
+  let mimeprefix = T.takeWhile (/='/') mt
+  if mimeprefix == "image" || mimeprefix == "video"
+     then do
+       t <- parseJSON v <|> (mconcat <$> parseJSON v)
+       return (mt, BinaryData (Base64.decodeLenient . TE.encodeUtf8 $ t))
+     else do
+       t <- parseJSON v <|> (mconcat <$> parseJSON v)
+       return $ (mt, TextualData t)
 
 instance ToJSON MimeBundle where
   toJSON (MimeBundle m) =
