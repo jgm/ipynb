@@ -63,7 +63,7 @@ data Notebook a = Notebook
   { n_metadata       :: JSONMeta
   , n_nbformat       :: (Int, Int)
   , n_cells          :: [Cell a]
-  } deriving (Show, Generic)
+  } deriving (Show, Eq, Generic)
 
 instance Semigroup (Notebook a) where
   Notebook m1 f1 c1 <> Notebook m2 f2 c2 =
@@ -113,7 +113,7 @@ instance ToJSON (Notebook NbV4) where
 type JSONMeta = M.Map Text Value
 
 newtype Source = Source{ unSource :: [Text] }
-  deriving (Show, Generic, Semigroup, Monoid)
+  deriving (Show, Eq, Generic, Semigroup, Monoid)
 
 instance FromJSON Source where
   parseJSON v = do
@@ -128,7 +128,7 @@ data Cell a = Cell
   , c_source           :: Source
   , c_metadata         :: JSONMeta
   , c_attachments      :: Maybe (M.Map Text MimeBundle)
-} deriving (Show, Generic)
+} deriving (Show, Eq, Generic)
 
 instance FromJSON (Cell NbV4) where
   parseJSON = withObject "Cell" $ \v -> do
@@ -210,7 +210,7 @@ data CellType a =
     { c_execution_count  :: Maybe Int
     , c_outputs          :: [Output a]
     }
-  deriving (Show, Generic)
+  deriving (Show, Eq, Generic)
 
 data Output a =
     Stream
@@ -230,7 +230,7 @@ data Output a =
     , e_evalue          :: Text
     , e_traceback       :: [Text]
     }
-  deriving (Show, Generic)
+  deriving (Show, Eq, Generic)
 
 instance FromJSON (Output NbV4) where
   parseJSON = withObject "Object" $ \v -> do
@@ -321,10 +321,10 @@ data MimeData =
     BinaryData ByteString
   | TextualData Text
   | JsonData Value
-  deriving (Show, Generic)
+  deriving (Show, Eq, Generic)
 
 newtype MimeBundle = MimeBundle{ unMimeBundle :: M.Map MimeType MimeData }
-  deriving (Show, Generic, Semigroup, Monoid)
+  deriving (Show, Eq, Generic, Semigroup, Monoid)
 
 instance FromJSON MimeBundle where
   parseJSON v = do
