@@ -342,8 +342,9 @@ extractNbV3Data v = do
       go ("prompt_number", _) = Nothing
       go ("text", x) = Just ("text/plain", x)
       go ("latex", x) = Just ("text/latex", x)
+      go ("html", x) = Just ("text/html", x)
       go ("png", x)  = Just ("image/png", x)
-      go ("jpg", x)  = Just ("image/jpeg", x)
+      go ("jpeg", x)  = Just ("image/jpeg", x)
       go (_, _) = Nothing -- TODO complete list? where documented?
   parseJSON (Object . HM.fromList . mapMaybe go . HM.toList $ v)
 
@@ -409,7 +410,8 @@ adjustV3DataFields (Object hm) =
     _ -> Object hm
   where  modKey "text/plain" = "text"
          modKey "text/latex" = "latex"
-         modKey "image/jpg" = "jpg"
+         modKey "text/html" = "html"
+         modKey "image/jpeg" = "jpeg"
          modKey "image/png" = "png"
          modKey x = x
 adjustV3DataFields x = x
