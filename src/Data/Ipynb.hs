@@ -143,7 +143,7 @@ instance FromJSON (Cell NbV4) where
         "raw" -> pure Raw
         "code" ->
           Code
-            <$> v .: "execution_count"
+            <$> v .:? "execution_count"
             <*> v .: "outputs"
         _ -> fail $ "Unknown cell_type " ++ ty
     metadata <- v .: "metadata"
@@ -166,9 +166,10 @@ instance FromJSON (Cell NbV3) where
         "raw" -> pure Raw
         "code" ->
           Code
-            <$> v .: "prompt_number"
+            <$> v .:? "prompt_number"
             <*> v .: "outputs"
         _ -> fail $ "Unknown cell_type " ++ ty
+    collapsed <- v .:? "collapsed"
     metadata <- v .: "metadata"
     attachments <- v .:? "attachments"
     source <- if ty == "code"
@@ -184,7 +185,9 @@ instance FromJSON (Cell NbV3) where
                   else pure source
     return
       Cell{ c_cell_type = cell_type
-          , c_metadata = metadata
+          , c_metadata = case collapsed of
+                           Just x -> M.insert "collapsed" x metadata
+                           Nothing -> metadata
           , c_attachments = attachments
           , c_source = source'
           }
@@ -208,10 +211,15 @@ instance ToJSON (Cell NbV4) where
                  ]
 
 instance ToJSON (Cell NbV3) where
- toJSON c = object $
-   [ "source" .= c_source c
-   , "metadata" .= c_metadata c
-   ] ++
+ toJSON c =
+  object $
+   [ "source" .= c_source c ] ++
+   (case M.lookup "collapsed" (c_metadata c) of
+         Just x  ->
+          [ "metadata" .= M.delete "collapsed" (c_metadata c)
+          , "collapsed" .= x ]
+         Nothing ->
+          [ "metadata" .= c_metadata c ]) ++
    maybe [] (\x -> ["attachments" .= x]) (c_attachments c) ++
    case c_cell_type c of
      Markdown ->
@@ -366,13 +374,13 @@ instance ToJSON (Output NbV3) where
     ]
   toJSON e@(Execute_result{}) =
     adjustV3DataFields $ object
-    [ "output_type" .= ("execute_result" :: Text)
+    [ "output_type" .= ("pyout" :: Text)
     , "prompt_number" .= e_execution_count e
     , "metadata" .= e_metadata e
     , "data" .= e_data e
     ]
   toJSON e@(Err{}) = object $
-    [ "output_type" .= ("error" :: Text)
+    [ "output_type" .= ("pyerr" :: Text)
     , "ename" .= e_ename e
     , "evalue" .= e_evalue e
     , "traceback" .= e_traceback e
