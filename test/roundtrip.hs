@@ -48,13 +48,34 @@ normalizeBase64 bs =
 rtTest :: FilePath -> TestTree
 rtTest fp = testCase fp $ do
   inRaw <- BL.readFile fp
+  let format = inRaw ^? key "nbformat"._Number
+  case format of
+    Just 3 -> rtTest3 inRaw
+    _      -> rtTest4 inRaw
+
+rtTest3 :: BL.ByteString -> IO ()
+rtTest3 inRaw = do
   (inJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 inRaw
-  (nb :: Notebook NbV4) <- either error return $ eitherDecode inRaw
+  (nb :: Notebook NbV3) <- either error return $ eitherDecode inRaw
   let outRaw = encode nb
+  (nb' :: Notebook NbV3) <- either error return $ eitherDecode outRaw
   (outJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 outRaw
   -- test that (read . write) == id
   let patch = diff inJSON outJSON
   assertBool (show patch) (patch == Patch [])
   -- now test that (write . read) == id
-  (nb' :: Notebook NbV4) <- either error return $ eitherDecode outRaw
   assertEqual "write . read != read" nb nb'
+
+rtTest4 :: BL.ByteString -> IO ()
+rtTest4 inRaw = do
+  (inJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 inRaw
+  (nb :: Notebook NbV4) <- either error return $ eitherDecode inRaw
+  let outRaw = encode nb
+  (nb' :: Notebook NbV4) <- either error return $ eitherDecode outRaw
+  (outJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 outRaw
+  -- test that (read . write) == id
+  let patch = diff inJSON outJSON
+  assertBool (show patch) (patch == Patch [])
+  -- now test that (write . read) == id
+  assertEqual "write . read != read" nb nb'
+
