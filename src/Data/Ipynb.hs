@@ -97,6 +97,19 @@ instance ToJSON (Notebook NbV4) where
                 (n_cells n)
    ]
 
+instance ToJSON (Notebook NbV3) where
+ toJSON n = object
+   [ "nbformat" .= fst (n_nbformat n)
+   , "nbformat_minor" .= snd (n_nbformat n)
+   , "metadata" .= (n_metadata n)
+   , "worksheets" .=
+     [ [ "cells" .= (if n_nbformat n >= (4,1)
+                        then id
+                        else map (\c -> c{ c_attachments = Nothing }))
+                    (n_cells n) ] :: [Aeson.Pair]
+     ]
+   ]
+
 type JSONMeta = M.Map Text Value
 
 newtype Source = Source{ unSource :: [Text] }
@@ -187,6 +200,35 @@ instance ToJSON (Cell NbV4) where
        , c_outputs = outs
        }      -> [ "cell_type" .= ("code" :: Text)
                  , "execution_count" .= ec
+                 , "outputs" .= outs
+                 ]
+
+instance ToJSON (Cell NbV3) where
+ toJSON c = object $
+   ( "source" .= (c_source c) ) :
+   maybe [] (\x -> ["attachments" .= x]) (c_attachments c) ++
+   case c_cell_type c of
+     Markdown ->
+       case unSource (c_source c) of
+         [t] | "#" `T.isPrefixOf` t ->
+           let (hashes, rest) = T.span (=='#') t
+               level = T.length hashes
+               t' = Source [T.dropWhile (==' ') rest]
+           in    [ "cell_type" .= ("heading" :: Text)
+                 , "level" .= level
+                 , "source" .= t'
+                 ]
+         _ ->    [ "cell_type" .= ("markdown" :: Text)
+                 , "source" .= c_source c]
+     Raw      -> [ "cell_type" .= ("raw" :: Text)
+                 , "source" .= c_source c
+                 ]
+     Code{
+         c_execution_count = ec
+       , c_outputs = outs
+       }      -> [ "cell_type" .= ("code" :: Text)
+                 , "input" .= c_source c
+                 , "prompt_number" .= ec
                  , "outputs" .= outs
                  ]
 
@@ -304,6 +346,46 @@ instance ToJSON (Output NbV4) where
     , "traceback" .= e_traceback e
     ]
 
+instance ToJSON (Output NbV3) where
+  toJSON s@(Stream{}) = object
+    [ "output_type" .= ("stream" :: Text)
+    , "stream" .= s_name s
+    , "text" .= s_text s
+    ]
+  toJSON d@(Display_data{}) =
+    adjustV3DataFields $ object
+    [ "output_type" .= ("display_data" :: Text)
+    , "metadata" .= d_metadata d
+    , "data" .= d_data d
+    ]
+  toJSON e@(Execute_result{}) =
+    adjustV3DataFields $ object
+    [ "output_type" .= ("execute_result" :: Text)
+    , "prompt_number" .= e_execution_count e
+    , "metadata" .= e_metadata e
+    , "data" .= e_data e
+    ]
+  toJSON e@(Err{}) = object $
+    [ "output_type" .= ("error" :: Text)
+    , "ename" .= e_ename e
+    , "evalue" .= e_evalue e
+    , "traceback" .= e_traceback e
+    ]
+
+adjustV3DataFields :: Value -> Value
+adjustV3DataFields (Object hm) =
+  case HM.lookup "data" hm of
+    Just (Object dm) -> Object $
+      HM.delete "data" $ foldr
+      (\(k, v) -> HM.insert (modKey k) v) hm
+      (HM.toList dm)
+    _ -> Object hm
+  where  modKey "text/plain" = "text"
+         modKey "image/jpg" = "jpg"
+         modKey "image/png" = "png"
+         modKey x = x
+adjustV3DataFields x = x
+
 data MimeData =
     BinaryData ByteString
   | TextualData Text
@@ -346,16 +428,3 @@ breakLines t =
          Nothing -> if T.null x then [] else [x]
          Just (c, rest) -> (x <> T.singleton c) : breakLines rest
 
-{- --- for testing only:
-import qualified Data.ByteString.Lazy as BL
-
-readNotebookFile :: FilePath -> IO Notebook
-readNotebookFile fp = do
-  bs <- BL.readFile fp
-  case eitherDecode bs of
-    Right nb -> return nb
-    Left err -> error err
-
-writeNotebookFile :: FilePath -> Notebook -> IO ()
-writeNotebookFile fp = BL.writeFile fp . encode
--}
