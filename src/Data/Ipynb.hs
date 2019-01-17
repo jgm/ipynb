@@ -229,9 +229,9 @@ instance ToJSON (Cell NbV3) where
        , c_outputs = outs
        }      -> [ "cell_type" .= ("code" :: Text)
                  , "input" .= c_source c
-                 , "prompt_number" .= ec
                  , "outputs" .= outs
-                 ]
+                 ] ++
+                 maybe [] (\n -> ["prompt_number" .= n]) ec
 
 -- in v3, certain metadata fields occur in the main cell object.
 -- e.g. collapsed, language.
