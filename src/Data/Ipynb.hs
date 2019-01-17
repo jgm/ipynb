@@ -79,6 +79,7 @@ instance FromJSON (Notebook NbV3) where
     fmtminor <- v .:? "nbformat_minor" .!= 0
     metadata <- v .:? "metadata" .!= mempty
     worksheets <- v .: "worksheets"
+    -- NOTE: we ignore metadata on worksheets: is this ever used?
     cells <- mconcat <$> mapM (.: "cells") worksheets
     return $
       Notebook{ n_metadata = metadata
@@ -103,10 +104,13 @@ instance ToJSON (Notebook NbV3) where
    , "nbformat_minor" .= snd (n_nbformat n)
    , "metadata" .= (n_metadata n)
    , "worksheets" .=
-     [ [ "cells" .= (if n_nbformat n >= (4,1)
+     [ object
+       [ "cells" .= (if n_nbformat n >= (4,1)
                         then id
                         else map (\c -> c{ c_attachments = Nothing }))
-                    (n_cells n) ] :: [Aeson.Pair]
+                    (n_cells n)
+       , "metadata" .= (mempty :: JSONMeta) -- see above in FromJSON instance
+       ]
      ]
    ]
 
@@ -205,7 +209,9 @@ instance ToJSON (Cell NbV4) where
 
 instance ToJSON (Cell NbV3) where
  toJSON c = object $
-   ( "source" .= (c_source c) ) :
+   [ "source" .= c_source c
+   , "metadata" .= c_metadata c
+   ] ++
    maybe [] (\x -> ["attachments" .= x]) (c_attachments c) ++
    case c_cell_type c of
      Markdown ->
