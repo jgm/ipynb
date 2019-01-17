@@ -30,7 +30,7 @@ isIpynb fp = takeExtension fp == ".ipynb"
 
 -- We don't want tests failing because of inconsequential
 -- differences in formatting of base64 data, like line breaks.
-normalizeBase64 :: BL.ByteString -> BL.ByteString
+normalizeBase64 :: Value -> Value
 normalizeBase64 bs =
   bs & key "cells" . values . key "outputs" . values . key "data"
        . _Object %~ HM.mapWithKey (\k v ->
@@ -55,26 +55,26 @@ rtTest fp = testCase fp $ do
 
 rtTest3 :: BL.ByteString -> IO ()
 rtTest3 inRaw = do
-  (inJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 inRaw
+  (inJSON :: Value) <- either error return $ eitherDecode inRaw
   (nb :: Notebook NbV3) <- either error return $ eitherDecode inRaw
   let outRaw = encode nb
   (nb' :: Notebook NbV3) <- either error return $ eitherDecode outRaw
-  (outJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 outRaw
+  (outJSON :: Value) <- either error return $ eitherDecode outRaw
   -- test that (read . write) == id
-  let patch = diff inJSON outJSON
+  let patch = diff (normalizeBase64 inJSON) (normalizeBase64 outJSON)
   assertBool (show patch) (patch == Patch [])
   -- now test that (write . read) == id
   assertEqual "write . read != read" nb nb'
 
 rtTest4 :: BL.ByteString -> IO ()
 rtTest4 inRaw = do
-  (inJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 inRaw
+  (inJSON :: Value) <- either error return $ eitherDecode inRaw
   (nb :: Notebook NbV4) <- either error return $ eitherDecode inRaw
   let outRaw = encode nb
   (nb' :: Notebook NbV4) <- either error return $ eitherDecode outRaw
-  (outJSON :: Value) <- either error return $ eitherDecode $ normalizeBase64 outRaw
+  (outJSON :: Value) <- either error return $ eitherDecode outRaw
   -- test that (read . write) == id
-  let patch = diff inJSON outJSON
+  let patch = diff (normalizeBase64 inJSON) (normalizeBase64 outJSON)
   assertBool (show patch) (patch == Patch [])
   -- now test that (write . read) == id
   assertEqual "write . read != read" nb nb'
