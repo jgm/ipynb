@@ -378,18 +378,20 @@ instance ToJSON (Output NbV3) where
     , "text" .= s_text s
     ]
   toJSON d@(Display_data{}) =
-    adjustV3DataFields $ object
+    adjustV3DataFields $ object $
     [ "output_type" .= ("display_data" :: Text)
-    , "metadata" .= d_metadata d
     , "data" .= d_data d
-    ]
+    ] ++ if M.null (d_metadata d)
+            then []
+            else ["metadata" .= d_metadata d]
   toJSON e@(Execute_result{}) =
-    adjustV3DataFields $ object
+    adjustV3DataFields $ object $
     [ "output_type" .= ("pyout" :: Text)
     , "prompt_number" .= e_execution_count e
-    , "metadata" .= e_metadata e
     , "data" .= e_data e
-    ]
+    ] ++ if M.null (e_metadata e)
+            then []
+            else ["metadata" .= e_metadata e]
   toJSON e@(Err{}) = object $
     [ "output_type" .= ("pyerr" :: Text)
     , "ename" .= e_ename e
