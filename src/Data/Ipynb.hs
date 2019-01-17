@@ -341,6 +341,7 @@ extractNbV3Data v = do
       go ("metadata", _) = Nothing
       go ("prompt_number", _) = Nothing
       go ("text", x) = Just ("text/plain", x)
+      go ("latex", x) = Just ("text/latex", x)
       go ("png", x)  = Just ("image/png", x)
       go ("jpg", x)  = Just ("image/jpeg", x)
       go (_, _) = Nothing -- TODO complete list? where documented?
@@ -405,6 +406,7 @@ adjustV3DataFields (Object hm) =
       (HM.toList dm)
     _ -> Object hm
   where  modKey "text/plain" = "text"
+         modKey "text/latex" = "latex"
          modKey "image/jpg" = "jpg"
          modKey "image/png" = "png"
          modKey x = x
