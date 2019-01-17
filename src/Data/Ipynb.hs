@@ -212,14 +212,18 @@ instance ToJSON (Cell NbV4) where
 instance ToJSON (Cell NbV3) where
  toJSON c =
   object $
-   ( "source" .= c_source c ) :
    metadataToV3Pairs (c_metadata c) ++
    case c_cell_type c of
-     Markdown    -> [ "cell_type" .= ("markdown" :: Text) ]
+     Markdown    -> [ "cell_type" .= ("markdown" :: Text)
+                    , "source" .= c_source c
+                    ]
      Heading lev -> [ "cell_type" .= ("heading" :: Text)
                     , "level" .= lev
+                    , "source" .= c_source c
                     ]
-     Raw         -> [ "cell_type" .= ("raw" :: Text) ]
+     Raw         -> [ "cell_type" .= ("raw" :: Text)
+                    , "source" .= c_source c
+                    ]
      Code{
          c_execution_count = ec
        , c_outputs = outs
@@ -233,20 +237,20 @@ instance ToJSON (Cell NbV3) where
 -- e.g. collapsed, language.
 metadataToV3Pairs :: JSONMeta -> [Aeson.Pair]
 metadataToV3Pairs meta =
-  ("metadata" .= M.fromList metas) : map toPair nonmetas
-  where (nonmetas, metas) = partition isNonMeta $ M.toList meta
+  ("metadata" .= M.fromList regMeta) : map toPair extraMeta
+  where (extraMeta, regMeta) = partition isExtraMeta $ M.toList meta
         toPair (k,v) = k .= v
-        isNonMeta (k,_) = k `elem` nonMetaKeys
 
-nonMetaKeys :: [Text]
-nonMetaKeys = ["source", "metadata", "cell_type",
-               "level", "input", "prompt_number", "outputs"]
+v3MetaInMainCell :: [Text]
+v3MetaInMainCell = ["collapsed", "language"]
+
+isExtraMeta :: (Text, a) -> Bool
+isExtraMeta (k,_) = k `elem` v3MetaInMainCell
 
 parseV3Metadata :: HM.HashMap Text Value -> Aeson.Parser JSONMeta
 parseV3Metadata v = do
   meta <- v .: "metadata"
-  let isNonMeta (k,_) = k `elem` nonMetaKeys
-  let extraMeta = M.fromList $ filter (not . isNonMeta) $ HM.toList v
+  let extraMeta = M.fromList $ filter isExtraMeta $ HM.toList v
   return (meta <> extraMeta)
 
 data CellType a =
