@@ -162,7 +162,7 @@ instance FromJSON (Cell NbV3) where
     cell_type <-
       case ty of
         "markdown" -> pure Markdown
-        "heading" -> pure Markdown
+        "heading" -> Heading <$> v .: "level"
         "raw" -> pure Raw
         "code" ->
           Code
@@ -175,45 +175,46 @@ instance FromJSON (Cell NbV3) where
     source <- if ty == "code"
                  then v .: "input"
                  else v .: "source"
-    source' <- if ty == "heading"
-                  then do
-                    (level :: Int) <- v .: "level"
-                    let hashes = T.replicate level "#"
-                    -- parse heading as regular markdown cell
-                    return $ Source $ breakLines
-                           $ hashes <> " " <> mconcat (unSource source)
-                  else pure source
     return
       Cell{ c_cell_type = cell_type
           , c_metadata = case collapsed of
                            Just x -> M.insert "collapsed" x metadata
                            Nothing -> metadata
           , c_attachments = attachments
-          , c_source = source'
+          , c_source = source
           }
 
 -- note that execution_count can't be omitted!
 instance ToJSON (Cell NbV4) where
  toJSON c = object $
-   [ "source" .= (c_source c)
-   , "metadata" .= (c_metadata c)
-   ] ++
+   ("metadata" .= c_metadata c) :
    maybe [] (\x -> ["attachments" .= x]) (c_attachments c) ++
    case c_cell_type c of
-     Markdown -> [ "cell_type" .= ("markdown" :: Text) ]
-     Raw      -> [ "cell_type" .= ("raw" :: Text) ]
+     Markdown -> [ "cell_type" .= ("markdown" :: Text)
+                 , "source" .= c_source c ]
+     Heading lev ->
+                [ "cell_type" .= ("markdown" :: Text)
+                , "source" .=
+                     (Source . breakLines .
+                      ((T.replicate lev "#" <> " ") <>) .
+                      mconcat . unSource) (c_source c)
+                 ]
+     Raw      -> [ "cell_type" .= ("raw" :: Text)
+                 , "source" .= c_source c
+                 ]
      Code{
          c_execution_count = ec
        , c_outputs = outs
        }      -> [ "cell_type" .= ("code" :: Text)
                  , "execution_count" .= ec
                  , "outputs" .= outs
+                 , "source" .= c_source c
                  ]
 
 instance ToJSON (Cell NbV3) where
  toJSON c =
   object $
-   [ "source" .= c_source c ] ++
+   ( "source" .= c_source c ) :
    (case M.lookup "collapsed" (c_metadata c) of
          Just x  ->
           [ "metadata" .= M.delete "collapsed" (c_metadata c)
@@ -222,21 +223,11 @@ instance ToJSON (Cell NbV3) where
           [ "metadata" .= c_metadata c ]) ++
    maybe [] (\x -> ["attachments" .= x]) (c_attachments c) ++
    case c_cell_type c of
-     Markdown ->
-       case unSource (c_source c) of
-         [t] | "#" `T.isPrefixOf` t ->
-           let (hashes, rest) = T.span (=='#') t
-               level = T.length hashes
-               t' = Source [T.dropWhile (==' ') rest]
-           in    [ "cell_type" .= ("heading" :: Text)
-                 , "level" .= level
-                 , "source" .= t'
-                 ]
-         _ ->    [ "cell_type" .= ("markdown" :: Text)
-                 , "source" .= c_source c]
-     Raw      -> [ "cell_type" .= ("raw" :: Text)
-                 , "source" .= c_source c
-                 ]
+     Markdown    -> [ "cell_type" .= ("markdown" :: Text) ]
+     Heading lev -> [ "cell_type" .= ("heading" :: Text)
+                    , "level" .= lev
+                    ]
+     Raw         -> [ "cell_type" .= ("raw" :: Text) ]
      Code{
          c_execution_count = ec
        , c_outputs = outs
@@ -248,6 +239,9 @@ instance ToJSON (Cell NbV3) where
 
 data CellType a =
     Markdown
+  | Heading -- V3 only
+    { c_level  :: Int
+    }
   | Raw
   | Code
     { c_execution_count  :: Maybe Int
