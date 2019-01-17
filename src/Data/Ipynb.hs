@@ -31,6 +31,7 @@ import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text as T
+import Data.List (partition)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as BL
 import Data.Aeson as Aeson
@@ -169,17 +170,14 @@ instance FromJSON (Cell NbV3) where
             <$> v .:? "prompt_number"
             <*> v .: "outputs"
         _ -> fail $ "Unknown cell_type " ++ ty
-    collapsed <- v .:? "collapsed"
-    metadata <- v .: "metadata"
+    metadata <- parseV3Metadata v
     attachments <- v .:? "attachments"
     source <- if ty == "code"
                  then v .: "input"
                  else v .: "source"
     return
       Cell{ c_cell_type = cell_type
-          , c_metadata = case collapsed of
-                           Just x -> M.insert "collapsed" x metadata
-                           Nothing -> metadata
+          , c_metadata = metadata
           , c_attachments = attachments
           , c_source = source
           }
@@ -215,13 +213,7 @@ instance ToJSON (Cell NbV3) where
  toJSON c =
   object $
    ( "source" .= c_source c ) :
-   (case M.lookup "collapsed" (c_metadata c) of
-         Just x  ->
-          [ "metadata" .= M.delete "collapsed" (c_metadata c)
-          , "collapsed" .= x ]
-         Nothing ->
-          [ "metadata" .= c_metadata c ]) ++
-   maybe [] (\x -> ["attachments" .= x]) (c_attachments c) ++
+   metadataToV3Pairs (c_metadata c) ++
    case c_cell_type c of
      Markdown    -> [ "cell_type" .= ("markdown" :: Text) ]
      Heading lev -> [ "cell_type" .= ("heading" :: Text)
@@ -236,6 +228,26 @@ instance ToJSON (Cell NbV3) where
                  , "prompt_number" .= ec
                  , "outputs" .= outs
                  ]
+
+-- in v3, certain metadata fields occur in the main cell object.
+-- e.g. collapsed, language.
+metadataToV3Pairs :: JSONMeta -> [Aeson.Pair]
+metadataToV3Pairs meta =
+  ("metadata" .= M.fromList metas) : map toPair nonmetas
+  where (nonmetas, metas) = partition isNonMeta $ M.toList meta
+        toPair (k,v) = k .= v
+        isNonMeta (k,_) = k `elem` nonMetaKeys
+
+nonMetaKeys :: [Text]
+nonMetaKeys = ["source", "metadata", "cell_type",
+               "level", "input", "prompt_number", "outputs"]
+
+parseV3Metadata :: HM.HashMap Text Value -> Aeson.Parser JSONMeta
+parseV3Metadata v = do
+  meta <- v .: "metadata"
+  let isNonMeta (k,_) = k `elem` nonMetaKeys
+  let extraMeta = M.fromList $ filter (not . isNonMeta) $ HM.toList v
+  return (meta <> extraMeta)
 
 data CellType a =
     Markdown
