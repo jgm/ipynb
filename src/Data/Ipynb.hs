@@ -76,7 +76,7 @@ instance FromJSON (Notebook NbV4) where
 instance FromJSON (Notebook NbV3) where
   parseJSON = withObject "Notebook" $ \v -> do
     fmt <- v .:? "nbformat" .!= 0
-    when (fmt < 3 || fmt > 3) $ fail $ "expected nbformat == 3"
+    when (fmt > 3) $ fail $ "expected nbformat <= 3"
     fmtminor <- v .:? "nbformat_minor" .!= 0
     metadata <- v .:? "metadata" .!= mempty
     worksheets <- v .: "worksheets"

@@ -50,8 +50,8 @@ rtTest fp = testCase fp $ do
   inRaw <- BL.readFile fp
   let format = inRaw ^? key "nbformat"._Number
   case format of
-    Just 3 -> rtTest3 inRaw
-    _      -> rtTest4 inRaw
+    Just 4 -> rtTest4 inRaw
+    _      -> rtTest3 inRaw
 
 rtTest3 :: BL.ByteString -> IO ()
 rtTest3 inRaw = do
