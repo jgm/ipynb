@@ -3,6 +3,6 @@ test:
 
 # install haskell-ci from Hackage:
 .travis.yml: ipynb.cabal
-	make-travis-yml -o .travis.yml $<
+	make-travis-yml --local-ghc-options="-Wall -Werror" -o .travis.yml $<
 
 .PHONY: test
