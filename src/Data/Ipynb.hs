@@ -6,9 +6,17 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-|
+
 Data structure and JSON serializers for ipynb (Jupyter notebook) format.
-The format is documented here:
+Version 4 of the format is documented here:
 <https://nbformat.readthedocs.io/en/latest/format_description.html>.
+
+The library supports both version 4 ('Notebook NbV4') and version 3
+('Notebook NbV3') of nbformat.  Note that this is a phantom type: the
+`NbV3` or `NbV4` parameter only affects JSON serialization,
+not the data structure itself.  So code that manipulates
+notebooks can be polymorphic, operating on `Notebook a`.
+
 -}
 module Data.Ipynb ( Notebook(..)
                   , NbV3
@@ -33,7 +41,6 @@ import qualified Data.Text.Encoding as TE
 import qualified Data.Text as T
 import Data.List (partition)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Lazy as BL
 import Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
 import Control.Applicative ((<|>))

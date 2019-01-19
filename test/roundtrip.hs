@@ -2,16 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Data.Ipynb
-import Data.Aeson (Value(..), eitherDecode, encode, decode)
+import Data.Aeson (Value(..), eitherDecode, encode)
 import Data.Aeson.Diff
-import System.Environment
 import System.FilePath
 import qualified Data.ByteString.Lazy as BL
 import Test.Tasty
 import Test.Tasty.HUnit
 import System.Directory
-import Data.Char (isSpace)
-import Data.Text.IO as T
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Lens.Micro
@@ -49,11 +46,10 @@ normalizeBase64 bs =
                         String t' -> t'
                         _         -> error "expected String") $ V.toList vec
      go (String t) =
-       case Base64.decode (TE.encodeUtf8 (T.filter (not . isSpace) t)) of
+       case Base64.decode (TE.encodeUtf8 (T.filter (/='\n') t)) of
             Left _  -> String t  -- textual
             Right b -> String $
-              TE.decodeUtf8 . Base64.joinWith "\n" 76 . Base64.encode .
-              TE.encodeUtf8 . T.replace "\n" "" $ t
+              TE.decodeUtf8 . Base64.joinWith "\n" 76 . Base64.encode $ b
      go v = v
 
 rtTest :: FilePath -> TestTree
@@ -72,8 +68,8 @@ rtTest3 inRaw = do
   (nb' :: Notebook NbV3) <- either error return $ eitherDecode outRaw
   (outJSON :: Value) <- either error return $ eitherDecode outRaw
   -- test that (read . write) == id
-  let patch = diff (normalizeBase64 inJSON) (normalizeBase64 outJSON)
-  assertBool (show patch) (patch == Patch [])
+  let patch' = diff (normalizeBase64 inJSON) (normalizeBase64 outJSON)
+  assertBool (show patch') (patch' == Patch [])
   -- now test that (write . read) == id
   assertEqual "write . read != read" nb nb'
 
@@ -85,8 +81,8 @@ rtTest4 inRaw = do
   (nb' :: Notebook NbV4) <- either error return $ eitherDecode outRaw
   (outJSON :: Value) <- either error return $ eitherDecode outRaw
   -- test that (read . write) == id
-  let patch = diff (normalizeBase64 inJSON) (normalizeBase64 outJSON)
-  assertBool (show patch) (patch == Patch [])
+  let patch' = diff (normalizeBase64 inJSON) (normalizeBase64 outJSON)
+  assertBool (show patch') (patch' == Patch [])
   -- now test that (write . read) == id
   assertEqual "write . read != read" nb nb'
 
