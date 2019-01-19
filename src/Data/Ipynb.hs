@@ -249,7 +249,7 @@ isExtraMeta (k,_) = k `elem` v3MetaInMainCell
 
 parseV3Metadata :: HM.HashMap Text Value -> Aeson.Parser JSONMeta
 parseV3Metadata v = do
-  meta <- v .: "metadata"
+  meta <- v .:? "metadata" .!= mempty
   let extraMeta = M.fromList $ filter isExtraMeta $ HM.toList v
   return (meta <> extraMeta)
 
@@ -382,17 +382,13 @@ instance ToJSON (Output NbV3) where
     adjustV3DataFields $ object $
     [ "output_type" .= ("display_data" :: Text)
     , "data" .= d_data d
-    ] ++ if M.null (d_metadata d)
-            then []
-            else ["metadata" .= d_metadata d]
+    , "metadata" .= d_metadata d ]
   toJSON e@(Execute_result{}) =
     adjustV3DataFields $ object $
     [ "output_type" .= ("pyout" :: Text)
     , "prompt_number" .= e_execution_count e
     , "data" .= e_data e
-    ] ++ if M.null (e_metadata e)
-            then []
-            else ["metadata" .= e_metadata e]
+    , "metadata" .= e_metadata e ]
   toJSON e@(Err{}) = object $
     [ "output_type" .= ("pyerr" :: Text)
     , "ename" .= e_ename e
