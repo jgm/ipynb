@@ -74,7 +74,7 @@ instance FromJSON (Notebook NbV4) where
     fmtminor <- v .:? "nbformat_minor" .!= 0
     metadata <- v .:? "metadata" .!= mempty
     cells <- v .: "cells"
-    return $
+    return
       Notebook{ n_metadata = metadata
               , n_nbformat = (fmt, fmtminor)
               , n_cells = cells
@@ -83,13 +83,13 @@ instance FromJSON (Notebook NbV4) where
 instance FromJSON (Notebook NbV3) where
   parseJSON = withObject "Notebook" $ \v -> do
     fmt <- v .:? "nbformat" .!= 0
-    when (fmt > 3) $ fail $ "expected nbformat <= 3"
+    when (fmt > 3) $ fail "expected nbformat <= 3"
     fmtminor <- v .:? "nbformat_minor" .!= 0
     metadata <- v .:? "metadata" .!= mempty
     worksheets <- v .: "worksheets"
     -- NOTE: we ignore metadata on worksheets: is this ever used?
     cells <- mconcat <$> mapM (.: "cells") worksheets
-    return $
+    return
       Notebook{ n_metadata = metadata
               , n_nbformat = (fmt, fmtminor)
               , n_cells = cells
@@ -99,7 +99,7 @@ instance ToJSON (Notebook NbV4) where
  toJSON n = object
    [ "nbformat" .= fst (n_nbformat n)
    , "nbformat_minor" .= snd (n_nbformat n)
-   , "metadata" .= (n_metadata n)
+   , "metadata" .= n_metadata n
    , "cells" .= (if n_nbformat n >= (4,1)
                     then id
                     else map (\c -> c{ c_attachments = Nothing }))
@@ -110,7 +110,7 @@ instance ToJSON (Notebook NbV3) where
  toJSON n = object
    [ "nbformat" .= fst (n_nbformat n)
    , "nbformat_minor" .= snd (n_nbformat n)
-   , "metadata" .= (n_metadata n)
+   , "metadata" .= n_metadata n
    , "worksheets" .=
      [ object
        [ "cells" .= (if n_nbformat n >= (4,1)
@@ -357,23 +357,23 @@ extractNbV3Data v = do
   parseJSON (Object . HM.fromList . mapMaybe go . HM.toList $ v)
 
 instance ToJSON (Output NbV4) where
-  toJSON s@(Stream{}) = object
+  toJSON s@Stream{} = object
     [ "output_type" .= ("stream" :: Text)
     , "name" .= s_name s
     , "text" .= s_text s
     ]
-  toJSON d@(Display_data{}) = object
+  toJSON d@Display_data{} = object
     [ "output_type" .= ("display_data" :: Text)
     , "data" .= d_data d
     , "metadata" .= d_metadata d
     ]
-  toJSON e@(Execute_result{}) = object
+  toJSON e@Execute_result{} = object
     [ "output_type" .= ("execute_result" :: Text)
     , "execution_count" .= e_execution_count e
     , "data" .= e_data e
     , "metadata" .= e_metadata e
     ]
-  toJSON e@(Err{}) = object
+  toJSON e@Err{} = object
     [ "output_type" .= ("error" :: Text)
     , "ename" .= e_ename e
     , "evalue" .= e_evalue e
@@ -381,23 +381,23 @@ instance ToJSON (Output NbV4) where
     ]
 
 instance ToJSON (Output NbV3) where
-  toJSON s@(Stream{}) = object
+  toJSON s@Stream{} = object
     [ "output_type" .= ("stream" :: Text)
     , "stream" .= s_name s
     , "text" .= s_text s
     ]
-  toJSON d@(Display_data{}) =
-    adjustV3DataFields $ object $
+  toJSON d@Display_data{} =
+    adjustV3DataFields $ object
     [ "output_type" .= ("display_data" :: Text)
     , "data" .= d_data d
     , "metadata" .= d_metadata d ]
-  toJSON e@(Execute_result{}) =
-    adjustV3DataFields $ object $
+  toJSON e@Execute_result{} =
+    adjustV3DataFields $ object
     [ "output_type" .= ("pyout" :: Text)
     , "prompt_number" .= e_execution_count e
     , "data" .= e_data e
     , "metadata" .= e_metadata e ]
-  toJSON e@(Err{}) = object $
+  toJSON e@Err{} = object
     [ "output_type" .= ("pyerr" :: Text)
     , "ename" .= e_ename e
     , "evalue" .= e_evalue e
@@ -438,7 +438,7 @@ instance FromJSON MimeBundle where
 pairToMimeData :: (MimeType, Value) -> Aeson.Parser (MimeType, MimeData)
 pairToMimeData (mt, v)
   | mt == "application/json" ||
-    "+json" `T.isSuffixOf` mt = return $ (mt, JsonData v)
+    "+json" `T.isSuffixOf` mt = return (mt, JsonData v)
 pairToMimeData (mt, v) = do
   t <- parseJSON v <|> (mconcat <$> parseJSON v)
   let mimeprefix = T.takeWhile (/='/') mt
