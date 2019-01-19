@@ -5,7 +5,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-|
+{- |
+   Module      : Data.Ipynb
+   Copyright   : Copyright (C) 2019 John MacFarlane
+   License     : BSD3
+
+   Maintainer  : John MacFarlane <jgm@berkeley.edu>
+   Stability   : alpha
+   Portability : portable
 
 Data structure and JSON serializers for ipynb (Jupyter notebook) format.
 Version 4 of the format is documented here:
@@ -49,11 +56,13 @@ import GHC.Generics
 import Control.Monad (when)
 import Data.Char (isSpace)
 
-type MimeType = Text
-
+-- | Indexes 'Notebook' for serialization as nbformat version 3.
 data NbV3
+
+-- | Indexes 'Notebook' for serialization as nbformat version 4.
 data NbV4
 
+-- | A Jupyter notebook.
 data Notebook a = Notebook
   { notebookMetadata :: JSONMeta
   , notebookFormat   :: (Int, Int)
@@ -124,6 +133,9 @@ instance ToJSON (Notebook NbV3) where
 
 type JSONMeta = M.Map Text Value
 
+-- | A 'Source' is a textual content which may be
+-- represented in JSON either as a single string
+-- or as a list of strings (which are concatenated).
 newtype Source = Source{ unSource :: [Text] }
   deriving (Show, Eq, Generic, Semigroup, Monoid)
 
@@ -135,6 +147,7 @@ instance FromJSON Source where
 instance ToJSON Source where
   toJSON (Source ts) = toJSON ts
 
+-- | A Jupyter notebook cell.
 data Cell a = Cell
   { cellType         :: CellType a
   , cellSource       :: Source
@@ -260,6 +273,10 @@ parseV3Metadata v = do
   let extraMeta = M.fromList $ filter isExtraMeta $ HM.toList v
   return (meta <> extraMeta)
 
+-- | Information about the type of a notebook cell, plus
+-- data specific to that type.  note that 'Heading' is
+-- for v3 only; a 'Heading' will be rendered as 'Markdown'
+-- in v4.
 data CellType a =
     Markdown
   | Heading -- V3 only
@@ -272,6 +289,7 @@ data CellType a =
     }
   deriving (Show, Eq, Generic)
 
+-- | Output from a Code cell.
 data Output a =
     Stream
     { streamName             :: Text
@@ -421,12 +439,16 @@ adjustV3DataFields (Object hm) =
          modKey x = x
 adjustV3DataFields x = x
 
+-- | Data in an execution result or display data cell.
 data MimeData =
     BinaryData ByteString
   | TextualData Text
   | JsonData Value
   deriving (Show, Eq, Generic)
 
+type MimeType = Text
+
+-- | A 'MimeBundle' wraps a map from mime types to mime data.
 newtype MimeBundle = MimeBundle{ unMimeBundle :: M.Map MimeType MimeData }
   deriving (Show, Eq, Generic, Semigroup, Monoid)
 
@@ -457,6 +479,8 @@ instance ToJSON MimeBundle where
         mimeBundleToValue (TextualData t) = toJSON (breakLines t)
     in  toJSON $ M.map mimeBundleToValue m
 
+-- | Break up a string into a list of strings, each representing
+-- one line of the string (including trailing newline if any).
 breakLines :: Text -> [Text]
 breakLines t =
   let (x, y) = T.break (=='\n') t
