@@ -1,8 +1,9 @@
 name:                ipynb
 version:             0.1.0.0
-synopsis:            Data structure and JSON serializer/deserializer for
-                     Jupyter notebooks (.ipynb) format.
--- description:
+synopsis:            Data structure for working with Jupyter notebooks (ipynb).
+description:         ipynb defines a data structure for representing Jupyter
+                     notebooks, along with ToJSON and FromJSON instances
+                     for conversion to and from JSON .ipynb files.
 license:             BSD3
 license-file:        LICENSE
 author:              John MacFarlane and Paul Ivanov
@@ -22,7 +23,7 @@ library
   exposed-modules:   Data.Ipynb
   -- other-modules:
   -- other-extensions:
-  build-depends:       base,
+  build-depends:       base >= 4.5 && < 5,
                        containers,
                        unordered-containers,
                        base64-bytestring,
