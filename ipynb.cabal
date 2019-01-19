@@ -24,7 +24,7 @@ library
   exposed-modules:   Data.Ipynb
   -- other-modules:
   -- other-extensions:
-  build-depends:       base >= 4.5 && < 5,
+  build-depends:       base >= 4.8 && < 5,
                        containers,
                        unordered-containers,
                        base64-bytestring,

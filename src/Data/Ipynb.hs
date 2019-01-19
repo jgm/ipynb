@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP #-}
 {- |
    Module      : Data.Ipynb
    Copyright   : Copyright (C) 2019 John MacFarlane
@@ -55,6 +56,11 @@ import qualified Data.ByteString.Base64 as Base64
 import GHC.Generics
 import Control.Monad (when)
 import Data.Char (isSpace)
+#if MIN_VERSION_base(4,13,0)
+#else
+import Data.Semigroup
+#endif
+
 
 -- | Indexes 'Notebook' for serialization as nbformat version 3.
 data NbV3
