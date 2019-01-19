@@ -1,9 +1,0 @@
-* TODO haddock API documentation in module
-* TODO test suite
-including (read . write . read) == read
-      and (write . read . write) == write
-where can we find sample documents in v3 and v4 that
-won't pose licensing or size issues?
-* TODO More detailed README
-* TODO cabal description
-* TODO handle v3 output? (or is this needed)
