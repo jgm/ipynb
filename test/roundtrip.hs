@@ -10,6 +10,7 @@ import qualified Data.ByteString.Lazy as BL
 import Test.Tasty
 import Test.Tasty.HUnit
 import System.Directory
+import Data.Char (isSpace)
 import Data.Text.IO as T
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -35,15 +36,18 @@ normalizeBase64 bs =
   bs & key "cells" . values . key "outputs" . values . key "data"
        . _Object %~ HM.mapWithKey (\k v ->
                        if k == "application/json" ||
-                          "text/" `T.isPrefixOf` k
+                          "text/" `T.isPrefixOf` k ||
+                          "+json" `T.isSuffixOf` k
                           then v
-                          else case v of
-                            String t ->
-                              String $ TE.decodeUtf8 .
-                              Base64.joinWith "\n" 76 .
-                              TE.encodeUtf8 .
-                              T.replace "\n" "" $ t
-                            _ -> v)
+                          else go v)
+  where
+     go (String t) =
+       case Base64.decode (TE.encodeUtf8 (T.filter (not . isSpace) t)) of
+            Left _  -> String t  -- textual
+            Right b -> String $
+              TE.decodeUtf8 . Base64.joinWith "\n" 76 . Base64.encode .
+              TE.encodeUtf8 . T.replace "\n" "" $ t
+     go v = v
 
 rtTest :: FilePath -> TestTree
 rtTest fp = testCase fp $ do
