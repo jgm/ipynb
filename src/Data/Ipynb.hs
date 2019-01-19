@@ -345,6 +345,7 @@ extractNbV3Data v = do
       go ("html", x) = Just ("text/html", x)
       go ("png", x)  = Just ("image/png", x)
       go ("jpeg", x)  = Just ("image/jpeg", x)
+      go ("javascript", x)  = Just ("application/javascript", x)
       go (_, _) = Nothing -- TODO complete list? where documented?
   parseJSON (Object . HM.fromList . mapMaybe go . HM.toList $ v)
 
@@ -409,6 +410,7 @@ adjustV3DataFields (Object hm) =
          modKey "text/html" = "html"
          modKey "image/jpeg" = "jpeg"
          modKey "image/png" = "png"
+         modKey "application/javascript" = "javascript"
          modKey x = x
 adjustV3DataFields x = x
 
@@ -427,8 +429,9 @@ instance FromJSON MimeBundle where
     return $ MimeBundle $ M.fromList m
 
 pairToMimeData :: (MimeType, Value) -> Aeson.Parser (MimeType, MimeData)
-pairToMimeData ("application/json", v) =
-  return $ ("application/json", JsonData v)
+pairToMimeData (mt, v)
+  | mt == "application/json" ||
+    "+json" `T.isSuffixOf` mt = return $ (mt, JsonData v)
 pairToMimeData (mt, v) = do
   t <- parseJSON v <|> (mconcat <$> parseJSON v)
   let mimeprefix = T.takeWhile (/='/') mt
