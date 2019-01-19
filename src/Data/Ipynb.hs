@@ -55,9 +55,9 @@ data NbV3
 data NbV4
 
 data Notebook a = Notebook
-  { notebookMetadata       :: JSONMeta
-  , notebookFormat       :: (Int, Int)
-  , notebookCells          :: [Cell a]
+  { notebookMetadata :: JSONMeta
+  , notebookFormat   :: (Int, Int)
+  , notebookCells    :: [Cell a]
   } deriving (Show, Eq, Generic)
 
 instance Semigroup (Notebook a) where
@@ -136,10 +136,10 @@ instance ToJSON Source where
   toJSON (Source ts) = toJSON ts
 
 data Cell a = Cell
-  { cellType        :: CellType a
-  , cellSource           :: Source
-  , cellMetadata         :: JSONMeta
-  , cellAttachments      :: Maybe (M.Map Text MimeBundle)
+  { cellType         :: CellType a
+  , cellSource       :: Source
+  , cellMetadata     :: JSONMeta
+  , cellAttachments  :: Maybe (M.Map Text MimeBundle)
 } deriving (Show, Eq, Generic)
 
 instance FromJSON (Cell NbV4) where
@@ -268,14 +268,14 @@ data CellType a =
   | Raw
   | Code
     { codeExecutionCount  :: Maybe Int
-    , codeOutputs          :: [Output a]
+    , codeOutputs         :: [Output a]
     }
   deriving (Show, Eq, Generic)
 
 data Output a =
     Stream
-    { streamName            :: Text
-    , streamText            :: Source }
+    { streamName             :: Text
+    , streamText             :: Source }
   | DisplayData
     { displayData            :: MimeBundle
     , displayMetadata        :: JSONMeta
@@ -286,9 +286,9 @@ data Output a =
     , executeMetadata        :: JSONMeta
     }
   | Err
-    { errName           :: Text
-    , errValue          :: Text
-    , errTraceback       :: [Text]
+    { errName          :: Text
+    , errValue         :: Text
+    , errTraceback     :: [Text]
     }
   deriving (Show, Eq, Generic)
 
