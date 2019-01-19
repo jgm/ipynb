@@ -55,9 +55,9 @@ data NbV3
 data NbV4
 
 data Notebook a = Notebook
-  { n_metadata       :: JSONMeta
-  , n_nbformat       :: (Int, Int)
-  , n_cells          :: [Cell a]
+  { notebookMetadata       :: JSONMeta
+  , notebookFormat       :: (Int, Int)
+  , notebookCells          :: [Cell a]
   } deriving (Show, Eq, Generic)
 
 instance Semigroup (Notebook a) where
@@ -75,9 +75,9 @@ instance FromJSON (Notebook NbV4) where
     metadata <- v .:? "metadata" .!= mempty
     cells <- v .: "cells"
     return
-      Notebook{ n_metadata = metadata
-              , n_nbformat = (fmt, fmtminor)
-              , n_cells = cells
+      Notebook{ notebookMetadata = metadata
+              , notebookFormat = (fmt, fmtminor)
+              , notebookCells    = cells
               }
 
 instance FromJSON (Notebook NbV3) where
@@ -90,33 +90,33 @@ instance FromJSON (Notebook NbV3) where
     -- NOTE: we ignore metadata on worksheets: is this ever used?
     cells <- mconcat <$> mapM (.: "cells") worksheets
     return
-      Notebook{ n_metadata = metadata
-              , n_nbformat = (fmt, fmtminor)
-              , n_cells = cells
+      Notebook{ notebookMetadata = metadata
+              , notebookFormat = (fmt, fmtminor)
+              , notebookCells = cells
               }
 
 instance ToJSON (Notebook NbV4) where
  toJSON n = object
-   [ "nbformat" .= fst (n_nbformat n)
-   , "nbformat_minor" .= snd (n_nbformat n)
-   , "metadata" .= n_metadata n
-   , "cells" .= (if n_nbformat n >= (4,1)
+   [ "nbformat" .= fst (notebookFormat n)
+   , "nbformat_minor" .= snd (notebookFormat n)
+   , "metadata" .= notebookMetadata n
+   , "cells" .= (if notebookFormat n >= (4,1)
                     then id
-                    else map (\c -> c{ c_attachments = Nothing }))
-                (n_cells n)
+                    else map (\c -> c{ cellAttachments = Nothing }))
+                (notebookCells n)
    ]
 
 instance ToJSON (Notebook NbV3) where
  toJSON n = object
-   [ "nbformat" .= fst (n_nbformat n)
-   , "nbformat_minor" .= snd (n_nbformat n)
-   , "metadata" .= n_metadata n
+   [ "nbformat" .= fst (notebookFormat n)
+   , "nbformat_minor" .= snd (notebookFormat n)
+   , "metadata" .= notebookMetadata n
    , "worksheets" .=
      [ object
-       [ "cells" .= (if n_nbformat n >= (4,1)
+       [ "cells" .= (if notebookFormat n >= (4,1)
                         then id
-                        else map (\c -> c{ c_attachments = Nothing }))
-                    (n_cells n)
+                        else map (\c -> c{ cellAttachments = Nothing }))
+                    (notebookCells n)
        , "metadata" .= (mempty :: JSONMeta) -- see above in FromJSON instance
        ]
      ]
@@ -136,10 +136,10 @@ instance ToJSON Source where
   toJSON (Source ts) = toJSON ts
 
 data Cell a = Cell
-  { c_cell_type        :: CellType a
-  , c_source           :: Source
-  , c_metadata         :: JSONMeta
-  , c_attachments      :: Maybe (M.Map Text MimeBundle)
+  { cellType        :: CellType a
+  , cellSource           :: Source
+  , cellMetadata         :: JSONMeta
+  , cellAttachments      :: Maybe (M.Map Text MimeBundle)
 } deriving (Show, Eq, Generic)
 
 instance FromJSON (Cell NbV4) where
@@ -158,10 +158,10 @@ instance FromJSON (Cell NbV4) where
     attachments <- v .:? "attachments"
     source <- v .: "source"
     return
-      Cell{ c_cell_type = cell_type
-          , c_metadata = metadata
-          , c_attachments = attachments
-          , c_source = source
+      Cell{ cellType = cell_type
+          , cellMetadata = metadata
+          , cellAttachments = attachments
+          , cellSource = source
           }
 
 instance FromJSON (Cell NbV3) where
@@ -183,59 +183,59 @@ instance FromJSON (Cell NbV3) where
                  then v .: "input"
                  else v .: "source"
     return
-      Cell{ c_cell_type = cell_type
-          , c_metadata = metadata
-          , c_attachments = attachments
-          , c_source = source
+      Cell{ cellType = cell_type
+          , cellMetadata = metadata
+          , cellAttachments = attachments
+          , cellSource = source
           }
 
 -- note that execution_count can't be omitted!
 instance ToJSON (Cell NbV4) where
  toJSON c = object $
-   ("metadata" .= c_metadata c) :
-   maybe [] (\x -> ["attachments" .= x]) (c_attachments c) ++
-   case c_cell_type c of
+   ("metadata" .= cellMetadata c) :
+   maybe [] (\x -> ["attachments" .= x]) (cellAttachments c) ++
+   case cellType c of
      Markdown -> [ "cell_type" .= ("markdown" :: Text)
-                 , "source" .= c_source c ]
+                 , "source" .= cellSource c ]
      Heading lev ->
                 [ "cell_type" .= ("markdown" :: Text)
                 , "source" .=
                      (Source . breakLines .
                       ((T.replicate lev "#" <> " ") <>) .
-                      mconcat . unSource) (c_source c)
+                      mconcat . unSource) (cellSource c)
                  ]
      Raw      -> [ "cell_type" .= ("raw" :: Text)
-                 , "source" .= c_source c
+                 , "source" .= cellSource c
                  ]
      Code{
-         c_execution_count = ec
-       , c_outputs = outs
+         codeExecutionCount = ec
+       , codeOutputs = outs
        }      -> [ "cell_type" .= ("code" :: Text)
                  , "execution_count" .= ec
                  , "outputs" .= outs
-                 , "source" .= c_source c
+                 , "source" .= cellSource c
                  ]
 
 instance ToJSON (Cell NbV3) where
  toJSON c =
   object $
-   metadataToV3Pairs (c_metadata c) ++
-   case c_cell_type c of
+   metadataToV3Pairs (cellMetadata c) ++
+   case cellType c of
      Markdown    -> [ "cell_type" .= ("markdown" :: Text)
-                    , "source" .= c_source c
+                    , "source" .= cellSource c
                     ]
      Heading lev -> [ "cell_type" .= ("heading" :: Text)
                     , "level" .= lev
-                    , "source" .= c_source c
+                    , "source" .= cellSource c
                     ]
      Raw         -> [ "cell_type" .= ("raw" :: Text)
-                    , "source" .= c_source c
+                    , "source" .= cellSource c
                     ]
      Code{
-         c_execution_count = ec
-       , c_outputs = outs
+         codeExecutionCount = ec
+       , codeOutputs = outs
        }      -> [ "cell_type" .= ("code" :: Text)
-                 , "input" .= c_source c
+                 , "input" .= cellSource c
                  , "outputs" .= outs
                  ] ++
                  maybe [] (\n -> ["prompt_number" .= n]) ec
@@ -263,32 +263,32 @@ parseV3Metadata v = do
 data CellType a =
     Markdown
   | Heading -- V3 only
-    { c_level  :: Int
+    { headingLevel  :: Int
     }
   | Raw
   | Code
-    { c_execution_count  :: Maybe Int
-    , c_outputs          :: [Output a]
+    { codeExecutionCount  :: Maybe Int
+    , codeOutputs          :: [Output a]
     }
   deriving (Show, Eq, Generic)
 
 data Output a =
     Stream
-    { s_name            :: Text
-    , s_text            :: Source }
-  | Display_data
-    { d_data            :: MimeBundle
-    , d_metadata        :: JSONMeta
+    { streamName            :: Text
+    , streamText            :: Source }
+  | DisplayData
+    { displayData            :: MimeBundle
+    , displayMetadata        :: JSONMeta
     }
-  | Execute_result
-    { e_execution_count :: Int
-    , e_data            :: MimeBundle
-    , e_metadata        :: JSONMeta
+  | ExecuteResult
+    { executeCount :: Int
+    , executeData            :: MimeBundle
+    , executeMetadata        :: JSONMeta
     }
   | Err
-    { e_ename           :: Text
-    , e_evalue          :: Text
-    , e_traceback       :: [Text]
+    { errName           :: Text
+    , errValue          :: Text
+    , errTraceback       :: [Text]
     }
   deriving (Show, Eq, Generic)
 
@@ -301,11 +301,11 @@ instance FromJSON (Output NbV4) where
           <$> v .: "name"
           <*> v .: "text"
       "display_data" ->
-        Display_data
+        DisplayData
           <$> v .: "data"
           <*> v .:? "metadata" .!= mempty
       "execute_result" ->
-        Execute_result
+        ExecuteResult
           <$> v .: "execution_count"
           <*> v .: "data"
           <*> v .:? "metadata" .!= mempty
@@ -325,11 +325,11 @@ instance FromJSON (Output NbV3) where
           <$> v .: "stream"
           <*> v .: "text"
       "display_data" ->
-        Display_data
+        DisplayData
           <$> extractNbV3Data v
           <*> v .:? "metadata" .!= mempty
       "pyout" ->
-        Execute_result
+        ExecuteResult
           <$> v .: "prompt_number"
           <*> extractNbV3Data v
           <*> v .:? "metadata" .!= mempty
@@ -359,49 +359,49 @@ extractNbV3Data v = do
 instance ToJSON (Output NbV4) where
   toJSON s@Stream{} = object
     [ "output_type" .= ("stream" :: Text)
-    , "name" .= s_name s
-    , "text" .= s_text s
+    , "name" .= streamName s
+    , "text" .= streamText s
     ]
-  toJSON d@Display_data{} = object
+  toJSON d@DisplayData{} = object
     [ "output_type" .= ("display_data" :: Text)
-    , "data" .= d_data d
-    , "metadata" .= d_metadata d
+    , "data" .= displayData d
+    , "metadata" .= displayMetadata d
     ]
-  toJSON e@Execute_result{} = object
+  toJSON e@ExecuteResult{} = object
     [ "output_type" .= ("execute_result" :: Text)
-    , "execution_count" .= e_execution_count e
-    , "data" .= e_data e
-    , "metadata" .= e_metadata e
+    , "execution_count" .= executeCount e
+    , "data" .= executeData e
+    , "metadata" .= executeMetadata e
     ]
   toJSON e@Err{} = object
     [ "output_type" .= ("error" :: Text)
-    , "ename" .= e_ename e
-    , "evalue" .= e_evalue e
-    , "traceback" .= e_traceback e
+    , "ename" .= errName e
+    , "evalue" .= errValue e
+    , "traceback" .= errTraceback e
     ]
 
 instance ToJSON (Output NbV3) where
   toJSON s@Stream{} = object
     [ "output_type" .= ("stream" :: Text)
-    , "stream" .= s_name s
-    , "text" .= s_text s
+    , "stream" .= streamName s
+    , "text" .= streamText s
     ]
-  toJSON d@Display_data{} =
+  toJSON d@DisplayData{} =
     adjustV3DataFields $ object
     [ "output_type" .= ("display_data" :: Text)
-    , "data" .= d_data d
-    , "metadata" .= d_metadata d ]
-  toJSON e@Execute_result{} =
+    , "data" .= displayData d
+    , "metadata" .= displayMetadata d ]
+  toJSON e@ExecuteResult{} =
     adjustV3DataFields $ object
     [ "output_type" .= ("pyout" :: Text)
-    , "prompt_number" .= e_execution_count e
-    , "data" .= e_data e
-    , "metadata" .= e_metadata e ]
+    , "prompt_number" .= executeCount e
+    , "data" .= executeData e
+    , "metadata" .= executeMetadata e ]
   toJSON e@Err{} = object
     [ "output_type" .= ("pyerr" :: Text)
-    , "ename" .= e_ename e
-    , "evalue" .= e_evalue e
-    , "traceback" .= e_traceback e
+    , "ename" .= errName e
+    , "evalue" .= errValue e
+    , "traceback" .= errTraceback e
     ]
 
 adjustV3DataFields :: Value -> Value
