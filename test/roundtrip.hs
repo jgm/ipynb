@@ -18,6 +18,7 @@ import Lens.Micro
 import Lens.Micro.Aeson
 import qualified Data.HashMap.Strict as HM
 import qualified Data.ByteString.Base64 as Base64
+import qualified Data.Vector as V
 
 main :: IO ()
 main = do
@@ -41,6 +42,12 @@ normalizeBase64 bs =
                           then v
                           else go v)
   where
+     go (Array vec) =
+       go $ String
+          $ mconcat $ map
+              (\v' -> case v' of
+                        String t' -> t'
+                        _         -> error "expected String") $ V.toList vec
      go (String t) =
        case Base64.decode (TE.encodeUtf8 (T.filter (not . isSpace) t)) of
             Left _  -> String t  -- textual
