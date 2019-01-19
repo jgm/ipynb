@@ -81,7 +81,7 @@ instance Semigroup (Notebook a) where
 
 instance Monoid (Notebook a) where
   mempty = Notebook mempty (0, 0) mempty
-#if MIN_VERSION_base(4,10,0)
+#if MIN_VERSION_base(4,11,0)
 #else
   mappend = (<>)
 #endif

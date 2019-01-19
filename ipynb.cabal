@@ -31,6 +31,8 @@ library
                        aeson,
                        bytestring,
                        text
+  if impl(ghc < 8.0)
+    build-depends:     semigroups == 0.18.*
   hs-source-dirs:      src
   default-language:    Haskell2010
 
@@ -54,8 +56,6 @@ test-suite roundtrip
                        base64-bytestring,
                        text,
                        vector
-  if impl(ghc < 8.0)
-    build-depends:     semigroups == 0.18.*
   hs-source-dirs:      test
   default-language:    Haskell2010
 
