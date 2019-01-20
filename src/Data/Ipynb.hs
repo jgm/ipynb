@@ -1,11 +1,11 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {- |
    Module      : Data.Ipynb
    Copyright   : Copyright (C) 2019 John MacFarlane
@@ -40,22 +40,22 @@ module Data.Ipynb ( Notebook(..)
                   , breakLines
                   )
 where
-import Prelude
-import Data.Maybe (mapMaybe)
-import qualified Data.Map as M
-import qualified Data.HashMap.Strict as HM
-import Data.Text (Text)
-import qualified Data.Text.Encoding as TE
-import qualified Data.Text as T
-import Data.List (partition)
-import Data.ByteString (ByteString)
+import Control.Applicative ((<|>))
+import Control.Monad (when)
 import Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
-import Control.Applicative ((<|>))
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as Base64
-import GHC.Generics
-import Control.Monad (when)
 import Data.Char (isSpace)
+import qualified Data.HashMap.Strict as HM
+import Data.List (partition)
+import qualified Data.Map as M
+import Data.Maybe (mapMaybe)
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import GHC.Generics
+import Prelude
 #if MIN_VERSION_base(4,11,0)
 #else
 import Data.Semigroup
@@ -159,10 +159,10 @@ instance ToJSON Source where
 
 -- | A Jupyter notebook cell.
 data Cell a = Cell
-  { cellType         :: CellType a
-  , cellSource       :: Source
-  , cellMetadata     :: JSONMeta
-  , cellAttachments  :: Maybe (M.Map Text MimeBundle)
+  { cellType        :: CellType a
+  , cellSource      :: Source
+  , cellMetadata    :: JSONMeta
+  , cellAttachments :: Maybe (M.Map Text MimeBundle)
 } deriving (Show, Eq, Generic)
 
 instance FromJSON (Cell NbV4) where
@@ -294,29 +294,29 @@ data CellType a =
     }
   | Raw
   | Code
-    { codeExecutionCount  :: Maybe Int
-    , codeOutputs         :: [Output a]
+    { codeExecutionCount :: Maybe Int
+    , codeOutputs        :: [Output a]
     }
   deriving (Show, Eq, Generic)
 
 -- | Output from a Code cell.
 data Output a =
     Stream
-    { streamName             :: Text
-    , streamText             :: Source }
+    { streamName :: Text
+    , streamText :: Source }
   | DisplayData
-    { displayData            :: MimeBundle
-    , displayMetadata        :: JSONMeta
+    { displayData     :: MimeBundle
+    , displayMetadata :: JSONMeta
     }
   | ExecuteResult
-    { executeCount :: Int
-    , executeData            :: MimeBundle
-    , executeMetadata        :: JSONMeta
+    { executeCount    :: Int
+    , executeData     :: MimeBundle
+    , executeMetadata :: JSONMeta
     }
   | Err
-    { errName          :: Text
-    , errValue         :: Text
-    , errTraceback     :: [Text]
+    { errName      :: Text
+    , errValue     :: Text
+    , errTraceback :: [Text]
     }
   deriving (Show, Eq, Generic)
 
@@ -372,16 +372,16 @@ instance FromJSON (Output NbV3) where
 -- change short keys like text and png to mime types.
 extractNbV3Data :: Aeson.Object -> Aeson.Parser MimeBundle
 extractNbV3Data v = do
-  let go ("output_type", _) = Nothing
-      go ("metadata", _) = Nothing
+  let go ("output_type", _)   = Nothing
+      go ("metadata", _)      = Nothing
       go ("prompt_number", _) = Nothing
-      go ("text", x) = Just ("text/plain", x)
-      go ("latex", x) = Just ("text/latex", x)
-      go ("html", x) = Just ("text/html", x)
-      go ("png", x)  = Just ("image/png", x)
-      go ("jpeg", x)  = Just ("image/jpeg", x)
-      go ("javascript", x)  = Just ("application/javascript", x)
-      go (_, _) = Nothing -- TODO complete list? where documented?
+      go ("text", x)          = Just ("text/plain", x)
+      go ("latex", x)         = Just ("text/latex", x)
+      go ("html", x)          = Just ("text/html", x)
+      go ("png", x)           = Just ("image/png", x)
+      go ("jpeg", x)          = Just ("image/jpeg", x)
+      go ("javascript", x)    = Just ("application/javascript", x)
+      go (_, _)               = Nothing -- TODO complete list? where documented?
   parseJSON (Object . HM.fromList . mapMaybe go . HM.toList $ v)
 
 instance ToJSON (Output NbV4) where
@@ -440,13 +440,13 @@ adjustV3DataFields (Object hm) =
       (\(k, v) -> HM.insert (modKey k) v) hm
       (HM.toList dm)
     _ -> Object hm
-  where  modKey "text/plain" = "text"
-         modKey "text/latex" = "latex"
-         modKey "text/html" = "html"
-         modKey "image/jpeg" = "jpeg"
-         modKey "image/png" = "png"
+  where  modKey "text/plain"             = "text"
+         modKey "text/latex"             = "latex"
+         modKey "text/html"              = "html"
+         modKey "image/jpeg"             = "jpeg"
+         modKey "image/png"              = "png"
          modKey "application/javascript" = "javascript"
-         modKey x = x
+         modKey x                        = x
 adjustV3DataFields x = x
 
 -- | Data in an execution result or display data cell.
@@ -478,7 +478,7 @@ pairToMimeData (mt, v) = do
      then return (mt, TextualData t)
      else
        case Base64.decode (TE.encodeUtf8 (T.filter (not . isSpace) t)) of
-            Left _ -> return (mt, TextualData t)
+            Left _  -> return (mt, TextualData t)
             Right b -> return (mt, BinaryData b)
 
 instance ToJSON MimeBundle where
@@ -495,6 +495,6 @@ breakLines :: Text -> [Text]
 breakLines t =
   let (x, y) = T.break (=='\n') t
   in  case T.uncons y of
-         Nothing -> if T.null x then [] else [x]
+         Nothing        -> if T.null x then [] else [x]
          Just (c, rest) -> (x <> T.singleton c) : breakLines rest
 

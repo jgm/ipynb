@@ -1,21 +1,21 @@
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
 
-import Data.Ipynb
-import Data.Aeson (Value(..), eitherDecode, encode)
+import Data.Aeson (Value (..), eitherDecode, encode)
 import Data.Aeson.Diff
-import System.FilePath
+import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy as BL
-import Test.Tasty
-import Test.Tasty.HUnit
-import System.Directory
+import qualified Data.HashMap.Strict as HM
+import Data.Ipynb
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
+import qualified Data.Vector as V
 import Lens.Micro
 import Lens.Micro.Aeson
-import qualified Data.HashMap.Strict as HM
-import qualified Data.ByteString.Base64 as Base64
-import qualified Data.Vector as V
+import System.Directory
+import System.FilePath
+import Test.Tasty
+import Test.Tasty.HUnit
 
 main :: IO ()
 main = do
