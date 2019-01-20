@@ -5,4 +5,7 @@ test:
 .travis.yml: ipynb.cabal
 	make-travis-yml --local-ghc-options="-Wall -Werror" -o .travis.yml $<
 
-.PHONY: test
+format:
+	stylish-haskell -i src/Data/Ipynb.hs test/roundtrip.hs
+
+.PHONY: test format
