@@ -201,14 +201,13 @@ instance FromJSON (Cell NbV3) where
             <*> v .: "outputs"
         _ -> fail $ "Unknown cell_type " ++ ty
     metadata <- parseV3Metadata v
-    attachments <- v .:? "attachments"
     source <- if ty == "code"
                  then v .: "input"
                  else v .: "source"
     return
       Cell{ cellType = cell_type
           , cellMetadata = metadata
-          , cellAttachments = attachments
+          , cellAttachments = Nothing
           , cellSource = source
           }
 
