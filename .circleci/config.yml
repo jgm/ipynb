@@ -1,0 +1,126 @@
+version: 2
+
+env: &env
+    environment:
+      GHC_OPTIONS: "-Werror"
+      CABAL_REINIT_CONFIG: "y"
+      LC_ALL: "C.UTF-8"
+
+      PATH: /opt/ghc/bin:/sbin:/usr/sbin:/bin:/usr/bin
+
+    docker:
+      - image: fpco/stack-build
+
+#-----------------------------------------------------------------------------
+# Common utility stuff, not to be modified usually
+#-----------------------------------------------------------------------------
+
+preinstall: &preinstall
+  run: |
+        apt-get update
+        # required for https/cache save and restore
+        apt-get install -y ca-certificates
+
+        # For ghc and cabal-install packages from haskell.org
+        # gnupg is required for apt-key to work
+        apt-get install -y gnupg
+        apt-key adv --keyserver keyserver.ubuntu.com  --recv-keys BA3CBA3FFE22B574
+restore: &restore
+  # Needs to happen after installing ca-certificates
+  restore_cache:
+    key: v1-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}
+
+save: &save
+  save_cache:
+      key: v1-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}
+      paths:
+        - ~/.cabal
+        - ~/.ghc
+        - ~/.local
+        - ~/.stack
+
+#-----------------------------------------------------------------------------
+# Build matrix
+#-----------------------------------------------------------------------------
+
+jobs:
+  cabal-ghc-8.6.3:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-8.6.3
+              apt-get install -y cabal-install-2.4
+              cabal v2-build --enable-tests --dependencies-only --disable-optimization -j2 -ffast all
+              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+        - *save
+  cabal-ghc-8.4.4:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-8.4.4
+              apt-get install -y cabal-install-2.4
+              cabal v2-build --enable-tests --dependencies-only --disable-optimization -j2 -ffast all
+              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+        - *save
+  cabal-ghc-8.2.2:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-8.2.2
+              apt-get install -y cabal-install-2.4
+              cabal v2-build --enable-tests --dependencies-only --disable-optimization -j2 -ffast all
+              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+        - *save
+  cabal-ghc-8.0.2:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-8.0.2
+              apt-get install -y cabal-install-2.4
+              cabal v2-build --enable-tests --dependencies-only --disable-optimization -j2 -ffast all
+              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+        - *save
+  cabal-ghc-7.10.3:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-7.10.3
+              apt-get install -y cabal-install-2.4
+              cabal v2-build --enable-tests --dependencies-only --disable-optimization -j2 -ffast all
+              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+        - *save
+  stack-ghc-8.4:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+            stack test --ghc-options='-O0 -Wall -Werror' --lts=lts-12
+        - *save
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - cabal-ghc-8.6.3
+      - cabal-ghc-8.4.4
+      - cabal-ghc-8.2.2
+      - cabal-ghc-8.0.2
+      - cabal-ghc-7.10.3
+      - stack-ghc-8.4
