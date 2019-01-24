@@ -26,14 +26,13 @@ preinstall: &preinstall
         echo "deb http://downloads.haskell.org/debian stretch main" >> /etc/apt/sources.list
         apt-get update
 
-        # required for packcheck
+install_stack: &install_stack
         apt-get install -y curl
-
         # required for outbound https for stack and for stack setup
         apt-get install -y netbase xz-utils make
-
         # get stack
-        curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $1 --wildcards '*/stack'
+        curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOME/.local/bin --wildcards '*/stack'
+        export PATH=$HOME/.local/bin:$PATH
 
 restore: &restore
   # Needs to happen after installing ca-certificates
@@ -125,10 +124,12 @@ jobs:
       steps:
         - checkout
         - *preinstall
+        - *install_stack
         - *restore
         - run: |
+            apt-get install -y ghc-8.4.3
             stack update
-            stack setup --lts=lts-12
+            stack setup --lts=lts-12 --system-ghc
             stack test --ghc-options='-O0 -Wall -Werror' --lts=lts-12
         - *save
 
