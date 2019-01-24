@@ -5,7 +5,7 @@ env: &env
       LC_ALL: "C.UTF-8"
 
     docker:
-      - image: fpco/stack-build
+      - image: fpco/stack-build:lts
 
 #-----------------------------------------------------------------------------
 # Common utility stuff, not to be modified usually
@@ -16,6 +16,7 @@ preinstall: &preinstall
       echo 'export PATH=/opt/cabal/bin:$PATH' >> $BASH_ENV
       source $BASH_ENV
       apt-get update
+
 restore: &restore
   # Needs to happen after installing ca-certificates
   restore_cache:
@@ -101,16 +102,16 @@ jobs:
               cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
               cabal v2-test --project-file=cabal.project.ci all
         - *save
-  stack-ghc-8.4:
+  stack-ghc-8.6:
       <<: *env
       steps:
         - checkout
         - *preinstall
         - *restore
         - run: |
+            apt-get install -y ghc-8.6.3
             stack update
-            stack setup --lts=lts-12
-            stack test --ghc-options='-O0 -Wall -Werror' --lts=lts-12
+            stack test --system-ghc --ghc-options='-O0 -Wall -Werror' .
         - *save
 
 workflows:
@@ -122,4 +123,4 @@ workflows:
       - cabal-ghc-8.2.2
       - cabal-ghc-8.0.2
       - cabal-ghc-7.10.3
-      - stack-ghc-8.4
+      - stack-ghc-8.6
