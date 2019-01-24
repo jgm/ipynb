@@ -28,9 +28,7 @@ preinstall: &preinstall
 
 install_stack: &install_stack
   run: |
-        apt-get install -y curl
-        # required for outbound https for stack and for stack setup
-        apt-get install -y netbase xz-utils make
+        apt-get install -y curl make
         # get stack
         mkdir -p $HOME/.local/bin
         retry_cmd() {
