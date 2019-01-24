@@ -128,10 +128,18 @@ jobs:
       steps:
         - checkout
         - *preinstall
-        - *install_stack
         - *restore
         - run: |
             apt-get install -y ghc-8.4.3
+            # get stack
+            apt-get install -y curl make
+            mkdir -p $HOME/.local/bin
+            retry_cmd() {
+                cmd=$*
+                $cmd || (sleep 2 && $cmd) || (sleep 10 && $cmd)
+            }
+            retry_cmd curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOME/.local/bin --wildcards '*/stack'
+            export PATH=$HOME/.local/bin:$PATH
             stack update
             stack setup --lts=lts-12 --system-ghc
             stack test --ghc-options='-O0 -Wall -Werror' --lts=lts-12
