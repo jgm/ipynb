@@ -141,8 +141,7 @@ jobs:
             retry_cmd curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOME/.local/bin --wildcards '*/stack'
             export PATH=$HOME/.local/bin:$PATH
             stack update
-            stack setup --system-ghc
-            stack test --ghc-options='-O0 -Wall -Werror'
+            stack test --system-ghc --ghc-options='-O0 -Wall -Werror' .
         - *save
 
 workflows:
