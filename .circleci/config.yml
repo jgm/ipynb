@@ -65,6 +65,7 @@ jobs:
         - run: |
               apt-get install -y ghc-8.4.4
               apt-get install -y cabal-install-2.4
+              cabal v2-update
               cabal v2-build --enable-tests --dependencies-only --disable-optimization -j2 -ffast all
               cabal v2-test --ghc-options='-O0 -Wall -Werror'
         - *save
@@ -77,6 +78,7 @@ jobs:
         - run: |
               apt-get install -y ghc-8.2.2
               apt-get install -y cabal-install-2.4
+              cabal v2-update
               cabal v2-build --enable-tests --dependencies-only --disable-optimization -j2 -ffast all
               cabal v2-test --ghc-options='-O0 -Wall -Werror'
         - *save
@@ -89,6 +91,7 @@ jobs:
         - run: |
               apt-get install -y ghc-8.0.2
               apt-get install -y cabal-install-2.4
+              cabal v2-update
               cabal v2-build --enable-tests --dependencies-only --disable-optimization -j2 -ffast all
               cabal v2-test --ghc-options='-O0 -Wall -Werror'
         - *save
@@ -101,6 +104,7 @@ jobs:
         - run: |
               apt-get install -y ghc-7.10.3
               apt-get install -y cabal-install-2.4
+              cabal v2-update
               cabal v2-build --enable-tests --dependencies-only --disable-optimization -j2 -ffast all
               cabal v2-test --ghc-options='-O0 -Wall -Werror'
         - *save
@@ -111,6 +115,8 @@ jobs:
         - *preinstall
         - *restore
         - run: |
+            stack update
+            stack setup --lts=lts-12
             stack test --ghc-options='-O0 -Wall -Werror' --lts=lts-12
         - *save
 
