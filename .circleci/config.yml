@@ -132,7 +132,7 @@ jobs:
         - run: |
             apt-get install -y ghc-8.4.3
             # get stack
-            apt-get install -y curl make
+            apt-get install -y curl make netbase xz-utils
             mkdir -p $HOME/.local/bin
             retry_cmd() {
                 cmd=$*
