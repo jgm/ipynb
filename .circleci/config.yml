@@ -123,14 +123,14 @@ jobs:
               cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
               cabal v2-test --project-file=cabal.project.ci all
         - *save
-  stack-ghc-8.4:
+  stack-ghc-8.6:
       <<: *env
       steps:
         - checkout
         - *preinstall
         - *restore
         - run: |
-            apt-get install -y ghc-8.4.3
+            apt-get install -y ghc-8.6.3
             # get stack
             apt-get install -y curl make netbase xz-utils
             mkdir -p $HOME/.local/bin
@@ -141,8 +141,8 @@ jobs:
             retry_cmd curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOME/.local/bin --wildcards '*/stack'
             export PATH=$HOME/.local/bin:$PATH
             stack update
-            stack setup --lts=lts-12 --system-ghc
-            stack test --ghc-options='-O0 -Wall -Werror' --lts=lts-12
+            stack setup --system-ghc
+            stack test --ghc-options='-O0 -Wall -Werror'
         - *save
 
 workflows:
@@ -154,4 +154,4 @@ workflows:
       - cabal-ghc-8.2.2
       - cabal-ghc-8.0.2
       - cabal-ghc-7.10.3
-      - stack-ghc-8.4
+      - stack-ghc-8.6
