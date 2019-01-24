@@ -34,7 +34,11 @@ install_stack: &install_stack
         apt-get install -y netbase xz-utils make
         # get stack
         mkdir -p $HOMELOCALBIN
-        curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOMELOCALBIN --wildcards '*/stack'
+        retry_cmd() {
+            cmd=$*
+            $cmd || (sleep 2 && $cmd) || (sleep 10 && $cmd)
+        }
+        retry_cmd curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOMELOCALBIN --wildcards '*/stack'
 
 restore: &restore
   # Needs to happen after installing ca-certificates
