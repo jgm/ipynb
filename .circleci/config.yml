@@ -3,7 +3,6 @@ version: 2
 env: &env
     environment:
       LC_ALL: "C.UTF-8"
-      PATH: /opt/ghc/bin:/sbin:/usr/sbin:/bin:/usr/bin
 
     docker:
       - image: fpco/stack-build
@@ -14,14 +13,9 @@ env: &env
 
 preinstall: &preinstall
   run: |
-        apt-get update
-        # required for https/cache save and restore
-        apt-get install -y ca-certificates
-
-        # For ghc and cabal-install packages from haskell.org
-        # gnupg is required for apt-key to work
-        apt-get install -y gnupg
-        apt-key adv --keyserver keyserver.ubuntu.com  --recv-keys BA3CBA3FFE22B574
+      echo 'export PATH=/opt/cabal/bin:$PATH' >> $BASH_ENV
+      source $BASH_ENV
+      apt-get update
 restore: &restore
   # Needs to happen after installing ca-certificates
   restore_cache:
