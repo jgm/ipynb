@@ -50,9 +50,11 @@ jobs:
         - run: |
               apt-get install -y ghc-8.6.3
               apt-get install -y cabal-install-2.4
-              cabal v2-build --enable-tests --dependencies-only --ghc-options='-O0' -j2 -ffast all
-              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+              cabal v2-update
+              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
+              cabal v2-test --project-file=cabal.project.ci all
         - *save
+
   cabal-ghc-8.4.4:
       <<: *env
       steps:
@@ -63,8 +65,8 @@ jobs:
               apt-get install -y ghc-8.4.4
               apt-get install -y cabal-install-2.4
               cabal v2-update
-              cabal v2-build --enable-tests --dependencies-only --ghc-options='-O0' -j2 -ffast all
-              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
+              cabal v2-test --project-file=cabal.project.ci all
         - *save
   cabal-ghc-8.2.2:
       <<: *env
@@ -76,8 +78,8 @@ jobs:
               apt-get install -y ghc-8.2.2
               apt-get install -y cabal-install-2.4
               cabal v2-update
-              cabal v2-build --enable-tests --dependencies-only --ghc-options='-O0' -j2 -ffast all
-              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
+              cabal v2-test --project-file=cabal.project.ci all
         - *save
   cabal-ghc-8.0.2:
       <<: *env
@@ -89,8 +91,8 @@ jobs:
               apt-get install -y ghc-8.0.2
               apt-get install -y cabal-install-2.4
               cabal v2-update
-              cabal v2-build --enable-tests --dependencies-only --ghc-options='-O0' -j2 -ffast all
-              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
+              cabal v2-test --project-file=cabal.project.ci all
         - *save
   cabal-ghc-7.10.3:
       <<: *env
@@ -102,8 +104,8 @@ jobs:
               apt-get install -y ghc-7.10.3
               apt-get install -y cabal-install-2.4
               cabal v2-update
-              cabal v2-build --enable-tests --dependencies-only --ghc-options='-O0' -j2 -ffast all
-              cabal v2-test --ghc-options='-O0 -Wall -Werror'
+              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
+              cabal v2-test --project-file=cabal.project.ci all
         - *save
   stack-ghc-8.4:
       <<: *env
