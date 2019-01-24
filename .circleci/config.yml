@@ -3,8 +3,7 @@ version: 2
 env: &env
     environment:
       LC_ALL: "C.UTF-8"
-      HOMELOCALBIN: $HOME/.local/bin
-      PATH: $HOMELOCALBIN:/opt/ghc/bin:/sbin:/usr/sbin:/bin:/usr/bin
+      PATH: /opt/ghc/bin:/sbin:/usr/sbin:/bin:/usr/bin
 
     docker:
       - image: debian:stretch
@@ -33,12 +32,13 @@ install_stack: &install_stack
         # required for outbound https for stack and for stack setup
         apt-get install -y netbase xz-utils make
         # get stack
-        mkdir -p $HOMELOCALBIN
+        mkdir -p $HOME/.local/bin
         retry_cmd() {
             cmd=$*
             $cmd || (sleep 2 && $cmd) || (sleep 10 && $cmd)
         }
-        retry_cmd curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOMELOCALBIN --wildcards '*/stack'
+        retry_cmd curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOME/.local/bin --wildcards '*/stack'
+        export PATH=$HOME/.local/bin:$PATH
 
 restore: &restore
   # Needs to happen after installing ca-certificates
