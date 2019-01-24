@@ -3,10 +3,9 @@ version: 2
 env: &env
     environment:
       LC_ALL: "C.UTF-8"
-      PATH: /opt/ghc/bin:/sbin:/usr/sbin:/bin:/usr/bin
 
     docker:
-      - image: debian:stretch
+      - image: fpco/stack-build:lts
 
 #-----------------------------------------------------------------------------
 # Common utility stuff, not to be modified usually
@@ -14,29 +13,7 @@ env: &env
 
 preinstall: &preinstall
   run: |
-        apt-get update
-        # required for https/cache save and restore
-        apt-get install -y ca-certificates
-
-        # For ghc and cabal-install packages from haskell.org
-        # gnupg is required for apt-key to work
-        apt-get install -y gnupg
-        apt-key adv --keyserver keyserver.ubuntu.com  --recv-keys BA3CBA3FFE22B574
-
-        echo "deb http://downloads.haskell.org/debian stretch main" >> /etc/apt/sources.list
-        apt-get update
-
-install_stack: &install_stack
-  run: |
-        apt-get install -y curl make
-        # get stack
-        mkdir -p $HOME/.local/bin
-        retry_cmd() {
-            cmd=$*
-            $cmd || (sleep 2 && $cmd) || (sleep 10 && $cmd)
-        }
-        retry_cmd curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOME/.local/bin --wildcards '*/stack'
-        export PATH=$HOME/.local/bin:$PATH
+      apt-get update
 
 restore: &restore
   # Needs to happen after installing ca-certificates
@@ -131,15 +108,6 @@ jobs:
         - *restore
         - run: |
             apt-get install -y ghc-8.6.3
-            # get stack
-            apt-get install -y curl make netbase xz-utils
-            mkdir -p $HOME/.local/bin
-            retry_cmd() {
-                cmd=$*
-                $cmd || (sleep 2 && $cmd) || (sleep 10 && $cmd)
-            }
-            retry_cmd curl -sSkL https://www.stackage.org/stack/linux-x86_64 \ | tar xz --strip-components=1 -C $HOME/.local/bin --wildcards '*/stack'
-            export PATH=$HOME/.local/bin:$PATH
             stack update
             stack test --system-ghc --ghc-options='-O0 -Wall -Werror' .
         - *save
