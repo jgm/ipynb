@@ -1,3 +1,0 @@
-packages: ipynb.cabal
-package ipynb
-  ghc-options: -O0 -Wall -Werror
