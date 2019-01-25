@@ -44,6 +44,7 @@ commands:
           name: install ghc
           command: apt-get install -y ghc-<< paramaters.ghcversion >>
       - run: |
+          set -e
           apt-get install -y cabal-install-2.4
           cabal v2-update
           TMPDIR=`mktemp -d -t ipynb.XXXXXXX`
@@ -58,6 +59,8 @@ commands:
           # that cabal v2 doesn't allow us to use -Werror for just local build:
           # https://github.com/haskell/cabal/issues/4247
           ! grep -q "warning:" build.log
+          cabal v2-haddock --ghc-options=${GHC_OPTS}"
+          cabal check
       - *save
 
 #-----------------------------------------------------------------------------
@@ -102,6 +105,7 @@ jobs:
         - *preinstall
         - *restore
         - run: |
+            set -e
             apt-get install -y ghc-8.6.3
             stack update
             stack test --system-ghc --ghc-options="${GHC_OPTS} -Werror" .
