@@ -33,7 +33,6 @@ save: &save
 
 commands:
   cabal_build:
-    <<: *env
     parameters:
       ghcversion:
         type: string
@@ -57,26 +56,31 @@ commands:
 
 jobs:
   cabal-ghc-8_6_3:
+      <<: *env
       steps:
           - cabal_build:
               ghcversion: 8.6.3
 
   cabal-ghc-8_4_4:
+      <<: *env
       steps:
           - cabal_build:
               ghcversion: 8.4.4
 
   cabal-ghc-8_2_2:
+      <<: *env
       steps:
           - cabal_build:
               ghcversion: 8.2.2
 
   cabal-ghc-8_0_2:
+      <<: *env
       steps:
           - cabal_build:
               ghcversion: 8.0.2
 
   cabal-ghc-7_10_3:
+      <<: *env
       steps:
           - cabal_build:
               ghcversion: 7.10.3
