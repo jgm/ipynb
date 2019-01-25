@@ -51,10 +51,8 @@ commands:
           cd ${TMPDIR}
           tar xvzf *.tar.gz
           cd *
-          cabal v2-configure --disable-optimization --enable-tests \
-           --ghc-options="-O0 -Wall -Werror"
-          cabal v2-build -j2
-          cabal v-test
+          cabal v2-build -j2 --dependencies-only --enable-tests --ghc-options="-O0"
+          cabal v2-test --ghc-options="-O0 -Wall -Werror"
       - *save
 
 #-----------------------------------------------------------------------------
