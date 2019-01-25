@@ -46,7 +46,7 @@ commands:
       - run: |
           apt-get install -y cabal-install-2.4
           cabal v2-update
-          TMPDIR=`mktemp -d -t ipynb`
+          TMPDIR=`mktemp -d -t ipynb.XXXXXXX`
           cabal v2-sdist --output-dir=${TMPDIR}
           cd ${TMPDIR}
           tar xvzf *.tar.gz
