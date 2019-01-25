@@ -41,7 +41,7 @@ module Data.Ipynb ( Notebook(..)
                   )
 where
 import Control.Applicative ((<|>))
-import Control.Monad (when)
+import Control.Monad (when, unless)
 import Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
 import Data.ByteString (ByteString)
