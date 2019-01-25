@@ -46,8 +46,11 @@ commands:
       - run: |
           apt-get install -y cabal-install-2.4
           cabal v2-update
-          cabal v2-sdist --output-dir=sourcedist
-          cd sourcedist
+          TMPDIR=`mktemp -d -t ipynb`
+          cabal v2-sdist --output-dir=${TMPDIR}
+          cd ${TMPDIR}
+          tar xvzf *.tar.gz
+          cd *
           cabal v2-configure --disable-optimization --enable-tests \
            --ghc-options="-O0 -Wall -Werror"
           cabal v2-build -j2
