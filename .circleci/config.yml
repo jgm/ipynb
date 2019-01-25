@@ -46,8 +46,12 @@ commands:
       - run: |
           apt-get install -y cabal-install-2.4
           cabal v2-update
-          cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
-          cabal v2-test --project-file=cabal.project.ci all
+          cabal v2-sdist --output-dir=sourcedist
+          cd sourcedist
+          cabal v2-configure --disable-optimization --enable-tests \
+           --ghc-options="-O0 -Wall -Werror"
+          cabal v2-build -j2
+          cabal v-test
       - *save
 
 #-----------------------------------------------------------------------------
