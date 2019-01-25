@@ -3,7 +3,7 @@ version: "2.1"
 env: &env
     environment:
       LC_ALL: "C.UTF-8"
-
+      GHC_OPTS: "-O0 -Wall"
     docker:
       - image: fpco/stack-build:lts
 
@@ -51,8 +51,13 @@ commands:
           cd ${TMPDIR}
           tar xvzf *.tar.gz
           cd *
-          cabal v2-build -j2 --dependencies-only --enable-tests --ghc-options="-O0"
-          cabal v2-test --ghc-options="-O0 -Wall -Werror"
+          cabal v2-build -j2 --dependencies-only --enable-tests --ghc-options="${GHC_OPTS}"
+          cabal v2-test --ghc-options="${GHC_OPTS}" 2>build.log
+          cat build.log
+          # fail if we had warnings; this is to work around the fact
+          # that cabal v2 doesn't allow us to use -Werror for just local build:
+          # https://github.com/haskell/cabal/issues/4247
+          ! grep "warning:" build.log
       - *save
 
 #-----------------------------------------------------------------------------
@@ -99,7 +104,7 @@ jobs:
         - run: |
             apt-get install -y ghc-8.6.3
             stack update
-            stack test --system-ghc --ghc-options='-O0 -Wall -Werror' .
+            stack test --system-ghc --ghc-options="${GHC_OPTS} -Werror" .
         - *save
 
 workflows:
