@@ -31,6 +31,25 @@ save: &save
         - ~/.local
         - ~/.stack
 
+commands:
+  cabal_build:
+    parameters:
+      ghcversion:
+        type: string
+    steps:
+      - checkout
+      - *preinstall
+      - *restore
+      - run:
+          name: install ghc
+          command: apt-get install -y ghc-<< paramaters.ghcversion >>
+      - run: |
+          apt-get install -y cabal-install-2.4
+          cabal v2-update
+          cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
+          cabal v2-test --project-file=cabal.project.ci all
+      - *save
+
 #-----------------------------------------------------------------------------
 # Build matrix
 #-----------------------------------------------------------------------------
@@ -39,69 +58,33 @@ jobs:
   cabal-ghc-8.6.3:
       <<: *env
       steps:
-        - checkout
-        - *preinstall
-        - *restore
-        - run: |
-              apt-get install -y ghc-8.6.3
-              apt-get install -y cabal-install-2.4
-              cabal v2-update
-              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
-              cabal v2-test --project-file=cabal.project.ci all
-        - *save
+          - cabal_build:
+              ghcversion: 8.6.3
 
   cabal-ghc-8.4.4:
       <<: *env
       steps:
-        - checkout
-        - *preinstall
-        - *restore
-        - run: |
-              apt-get install -y ghc-8.4.4
-              apt-get install -y cabal-install-2.4
-              cabal v2-update
-              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
-              cabal v2-test --project-file=cabal.project.ci all
-        - *save
+          - cabal_build:
+              ghcversion: 8.4.4
+
   cabal-ghc-8.2.2:
       <<: *env
       steps:
-        - checkout
-        - *preinstall
-        - *restore
-        - run: |
-              apt-get install -y ghc-8.2.2
-              apt-get install -y cabal-install-2.4
-              cabal v2-update
-              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
-              cabal v2-test --project-file=cabal.project.ci all
-        - *save
+          - cabal_build:
+              ghcversion: 8.2.2
+
   cabal-ghc-8.0.2:
       <<: *env
       steps:
-        - checkout
-        - *preinstall
-        - *restore
-        - run: |
-              apt-get install -y ghc-8.0.2
-              apt-get install -y cabal-install-2.4
-              cabal v2-update
-              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
-              cabal v2-test --project-file=cabal.project.ci all
-        - *save
+          - cabal_build:
+              ghcversion: 8.0.2
+
   cabal-ghc-7.10.3:
       <<: *env
       steps:
-        - checkout
-        - *preinstall
-        - *restore
-        - run: |
-              apt-get install -y ghc-7.10.3
-              apt-get install -y cabal-install-2.4
-              cabal v2-update
-              cabal v2-build --enable-tests --dependencies-only --project-file=cabal.project.ci -j2 all
-              cabal v2-test --project-file=cabal.project.ci all
-        - *save
+          - cabal_build:
+              ghcversion: 7.10.3
+
   stack-ghc-8.6:
       <<: *env
       steps:
@@ -120,7 +103,7 @@ workflows:
     jobs:
       - cabal-ghc-8.6.3
       - cabal-ghc-8.4.4
-      - cabal-ghc-8.2.2
-      - cabal-ghc-8.0.2
-      - cabal-ghc-7.10.3
+        #      - cabal-ghc-8.2.2
+        #      - cabal-ghc-8.0.2
+        #      - cabal-ghc-7.10.3
       - stack-ghc-8.6
