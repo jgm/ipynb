@@ -59,7 +59,7 @@ commands:
           # that cabal v2 doesn't allow us to use -Werror for just local build:
           # https://github.com/haskell/cabal/issues/4247
           ! grep -q "warning:" build.log
-          cabal v2-haddock --ghc-options=${GHC_OPTS}"
+          cabal v2-haddock --ghc-options="${GHC_OPTS}"
           cabal check
       - *save
 
