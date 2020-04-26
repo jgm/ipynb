@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 import Data.Aeson (Value (..), eitherDecode, encode)
-import Data.Aeson.Diff
+import Data.Aeson.Diff as AesonDiff
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as B
@@ -17,6 +17,8 @@ import System.Directory
 import System.FilePath
 import Test.Tasty
 import Test.Tasty.HUnit
+import Data.Semigroup
+import Data.Monoid
 
 main :: IO ()
 main = do
@@ -78,7 +80,8 @@ rtTest3 inRaw = do
   (nb' :: Notebook NbV3) <- either error return $ eitherDecode outRaw
   (outJSON :: Value) <- either error return $ eitherDecode outRaw
   -- test that (read . write) == id
-  let patch' = diff (normalizeBase64 inJSON) (normalizeBase64 outJSON)
+  let patch' = AesonDiff.diff
+         (normalizeBase64 inJSON) (normalizeBase64 outJSON)
   assertBool (show patch') (patch' == Patch [])
   -- now test that (write . read) == id
   assertEqual "write . read != read" nb nb'
@@ -91,7 +94,8 @@ rtTest4 inRaw = do
   (nb' :: Notebook NbV4) <- either error return $ eitherDecode outRaw
   (outJSON :: Value) <- either error return $ eitherDecode outRaw
   -- test that (read . write) == id
-  let patch' = diff (normalizeBase64 inJSON) (normalizeBase64 outJSON)
+  let patch' = AesonDiff.diff
+       (normalizeBase64 inJSON) (normalizeBase64 outJSON)
   assertBool (show patch') (patch' == Patch [])
   -- now test that (write . read) == id
   assertEqual "write . read != read" nb nb'
