@@ -1,7 +1,8 @@
-[![CircleCI](https://circleci.com/gh/jgm/ipynb.svg?style=svg)](https://circleci.com/gh/jgm/ipynb)
-
 ipynb
------
+=====
+
+[![CI
+tests](https://github.com/jgm/ipynb/workflows/CI%20tests/badge.svg)](https://github.com/jgm/ipynb/actions)
 
 ipynb is a Haskell library for representing [Jupyter notebooks]
 and converting them to and from the JSON .ipynb format.
