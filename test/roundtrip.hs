@@ -5,6 +5,7 @@ import Data.Aeson (Value (..), eitherDecode, encode)
 import Data.Aeson.Diff
 import qualified Data.ByteString.Base64 as Base64
 import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString as B
 import qualified Data.HashMap.Strict as HM
 import Data.Ipynb
 import qualified Data.Text as T
@@ -49,8 +50,17 @@ normalizeBase64 bs =
        case Base64.decode (TE.encodeUtf8 (T.filter (/='\n') t)) of
             Left _  -> String t  -- textual
             Right b -> String $
-              TE.decodeUtf8 . Base64.joinWith "\n" 76 . Base64.encode $ b
+              TE.decodeUtf8 .  (<> "\n") .
+              B.intercalate "\n" .  chunksOf 76 .
+              Base64.encode $ b
      go v = v
+
+chunksOf :: Int -> B.ByteString -> [B.ByteString]
+chunksOf k s
+   | B.null s = []
+   | otherwise =
+     let (h,t) = B.splitAt k s
+     in h : chunksOf k t
 
 rtTest :: FilePath -> TestTree
 rtTest fp = testCase fp $ do
