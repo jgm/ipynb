@@ -20,8 +20,9 @@ jobs:
             cabal: '2.4'
           - ghc: '8.8.1'
             cabal: '3.0'
-          - ghc: '8.10.1'
-            cabal: '3.2'
+          # waiting for new aeson-diff release for tests:
+          # - ghc: '8.10.1'
+          # cabal: '3.2'
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
