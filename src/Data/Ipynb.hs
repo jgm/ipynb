@@ -45,6 +45,7 @@ import Control.Monad (when)
 import Data.Aeson as Aeson
 import qualified Data.Aeson.Types as Aeson
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as Base64
 import Data.Char (isSpace)
 import qualified Data.HashMap.Strict as HM
@@ -483,10 +484,22 @@ pairToMimeData (mt, v) = do
 instance ToJSON MimeBundle where
   toJSON (MimeBundle m) =
     let mimeBundleToValue (BinaryData bs) =
-          toJSON $ TE.decodeUtf8 . Base64.joinWith "\n" 76 . Base64.encode $ bs
+          toJSON .
+            TE.decodeUtf8 .
+            (<> "\n") .
+            B.intercalate "\n" .  chunksOf 76 .
+            Base64.encode
+            $ bs
         mimeBundleToValue (JsonData v) = v
         mimeBundleToValue (TextualData t) = toJSON (breakLines t)
     in  toJSON $ M.map mimeBundleToValue m
+
+chunksOf :: Int -> ByteString -> [ByteString]
+chunksOf k s
+   | B.null s = []
+   | otherwise =
+     let (h,t) = B.splitAt k s
+     in h : chunksOf k t
 
 -- | Break up a string into a list of strings, each representing
 -- one line of the string (including trailing newline if any).
