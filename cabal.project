@@ -1,0 +1,6 @@
+packages: .
+
+source-repository-package
+    type: git
+    location: https://github.com/thsutton/aeson-diff
+    tag: deb1703c9a64cb0b573195f856f9665d438bb379
