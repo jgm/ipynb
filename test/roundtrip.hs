@@ -17,7 +17,6 @@ import System.Directory
 import System.FilePath
 import Test.Tasty
 import Test.Tasty.HUnit
-import Data.Semigroup
 import Data.Monoid
 
 main :: IO ()
