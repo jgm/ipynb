@@ -48,7 +48,6 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as Base64
 import Data.Char (isSpace)
-import qualified Data.HashMap.Strict as HM
 import Data.List (partition)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
@@ -61,7 +60,13 @@ import Prelude
 #else
 import Data.Semigroup
 #endif
-
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap as KM
+#else
+import qualified Data.HashMap.Strict as KM
+#endif
+import Data.String
+import qualified Data.Set as Set
 
 -- | Indexes 'Notebook' for serialization as nbformat version 3.
 data NbV3
@@ -269,18 +274,17 @@ metadataToV3Pairs :: JSONMeta -> [Aeson.Pair]
 metadataToV3Pairs meta =
   ("metadata" .= M.fromList regMeta) : map toPair extraMeta
   where (extraMeta, regMeta) = partition isExtraMeta $ M.toList meta
-        toPair (k,v) = k .= v
+        toPair (k,v) = (fromString (T.unpack k)) .= v
+        isExtraMeta (k,_) = k `Set.member` v3MetaInMainCell
 
-v3MetaInMainCell :: [Text]
-v3MetaInMainCell = ["collapsed", "language"]
+v3MetaInMainCell :: Set.Set Text
+v3MetaInMainCell = Set.fromList ["collapsed", "language"]
 
-isExtraMeta :: (Text, a) -> Bool
-isExtraMeta (k,_) = k `elem` v3MetaInMainCell
-
-parseV3Metadata :: HM.HashMap Text Value -> Aeson.Parser JSONMeta
+parseV3Metadata :: Aeson.Object -> Aeson.Parser JSONMeta
 parseV3Metadata v = do
   meta <- v .:? "metadata" .!= mempty
-  let extraMeta = M.fromList $ filter isExtraMeta $ HM.toList v
+  vm <- parseJSON (Object v)
+  let extraMeta = M.restrictKeys vm v3MetaInMainCell
   return (meta <> extraMeta)
 
 -- | Information about the type of a notebook cell, plus
@@ -382,7 +386,7 @@ extractNbV3Data v = do
       go ("jpeg", x)          = Just ("image/jpeg", x)
       go ("javascript", x)    = Just ("application/javascript", x)
       go (_, _)               = Nothing -- TODO complete list? where documented?
-  parseJSON (Object . HM.fromList . mapMaybe go . HM.toList $ v)
+  parseJSON (Object . KM.fromList . mapMaybe go . KM.toList $ v)
 
 instance ToJSON (Output NbV4) where
   toJSON s@Stream{} = object
@@ -434,11 +438,11 @@ instance ToJSON (Output NbV3) where
 
 adjustV3DataFields :: Value -> Value
 adjustV3DataFields (Object hm) =
-  case HM.lookup "data" hm of
+  case KM.lookup "data" hm of
     Just (Object dm) -> Object $
-      HM.delete "data" $ foldr
-      (\(k, v) -> HM.insert (modKey k) v) hm
-      (HM.toList dm)
+      KM.delete "data" $ foldr
+      (\(k, v) -> KM.insert (modKey k) v) hm
+      (KM.toList dm)
     _ -> Object hm
   where  modKey "text/plain"             = "text"
          modKey "text/latex"             = "latex"
