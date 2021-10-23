@@ -1,5 +1,5 @@
 name:                ipynb
-version:             0.1.0.1
+version:             0.1.0.2
 synopsis:            Data structure for working with Jupyter notebooks (ipynb).
 description:         ipynb defines a data structure for representing Jupyter
                      notebooks, along with ToJSON and FromJSON instances
