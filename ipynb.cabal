@@ -45,7 +45,7 @@ test-suite roundtrip
                      tasty-hunit,
                      aeson,
                      bytestring,
-                     microlens-aeson >= 2.4,
+                     microlens-aeson,
                      microlens,
                      text
   hs-source-dirs:    test
