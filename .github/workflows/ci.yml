@@ -20,21 +20,26 @@ jobs:
             cabal: '2.4'
           - ghc: '8.8.1'
             cabal: '3.0'
-          # waiting for new aeson-diff release for tests:
-          # - ghc: '8.10.1'
-          # cabal: '3.2'
+          - ghc: '8.10.4'
+            cabal: '3.2'
+          - ghc: '9.0.1'
+            cabal: '3.4'
+            cabalopts: '--constraint "aeson > 2"'
+          - ghc: '9.0.1'
+            cabal: '3.4'
+            cabalopts: '--constraint "aeson < 2"'
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
       run: |
           export PATH=/opt/cabal/${{ matrix.versions.cabal }}/bin:/opt/ghc/${{ matrix.versions.ghc }}/bin:$PATH
           cabal v2-update
-          cabal v2-build --dependencies-only --enable-tests --disable-optimization -fexecutable all
+          cabal v2-build --dependencies-only --enable-tests --disable-optimization -fexecutable ${{ matrix.versions.cabalopts }} all
     - name: Build and test
       run: |
           export PATH=/opt/cabal/${{ matrix.versions.cabal }}/bin:/opt/ghc/${{ matrix.versions.ghc }}/bin:$PATH
-          cabal v2-build --enable-tests --disable-optimization -fexecutable all
-          cabal v2-test --disable-optimization all
+          cabal v2-build --enable-tests --disable-optimization -fexecutable ${{ matrix.versions.cabalopts }} all
+          cabal v2-test --disable-optimization ${{ matrix.versions.cabalopts }} all
 
   macos:
 
