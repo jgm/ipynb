@@ -166,6 +166,7 @@ instance ToJSON Source where
 -- | A Jupyter notebook cell.
 data Cell a = Cell
   { cellType        :: CellType a
+  , cellId          :: Maybe Text
   , cellSource      :: Source
   , cellMetadata    :: JSONMeta
   , cellAttachments :: Maybe (M.Map Text MimeBundle)
@@ -174,6 +175,7 @@ data Cell a = Cell
 instance FromJSON (Cell NbV4) where
   parseJSON = withObject "Cell" $ \v -> do
     ty <- v .: "cell_type"
+    cell_id <- v.:? "id"
     cell_type <-
       case ty of
         "markdown" -> pure Markdown
@@ -188,6 +190,7 @@ instance FromJSON (Cell NbV4) where
     source <- v .: "source"
     return
       Cell{ cellType = cell_type
+          , cellId = cell_id
           , cellMetadata = metadata
           , cellAttachments = attachments
           , cellSource = source
@@ -212,6 +215,7 @@ instance FromJSON (Cell NbV3) where
                  else v .: "source"
     return
       Cell{ cellType = cell_type
+          , cellId = Nothing
           , cellMetadata = metadata
           , cellAttachments = Nothing
           , cellSource = source
@@ -221,6 +225,7 @@ instance FromJSON (Cell NbV3) where
 instance ToJSON (Cell NbV4) where
  toJSON c = object $
    ("metadata" .= cellMetadata c) :
+   maybe [] (\x -> ["id" .= cellId c]) (cellId c) ++
    maybe [] (\x -> ["attachments" .= x]) (cellAttachments c) ++
    case cellType c of
      Markdown -> [ "cell_type" .= ("markdown" :: Text)
