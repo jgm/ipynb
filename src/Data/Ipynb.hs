@@ -468,13 +468,13 @@ data MimeData =
     BinaryData ByteString
   | TextualData Text
   | JsonData Value
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 type MimeType = Text
 
 -- | A 'MimeBundle' wraps a map from mime types to mime data.
 newtype MimeBundle = MimeBundle{ unMimeBundle :: M.Map MimeType MimeData }
-  deriving (Show, Eq, Generic, Semigroup, Monoid)
+  deriving (Show, Eq, Ord, Generic, Semigroup, Monoid)
 
 instance FromJSON MimeBundle where
   parseJSON v = do
