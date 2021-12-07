@@ -147,7 +147,12 @@ instance ToJSON (Notebook NbV3) where
      ]
    ]
 
-type JSONMeta = M.Map Text Value
+newtype JSONMeta = JSONMeta (M.Map Text Value)
+  deriving (Show, Eq, Ord, Generic, Semigroup, Monoid, FromJSON)
+
+instance ToJSON JSONMeta where
+   toJSON = genericToJSON defaultOptions
+   toEncoding = genericToEncoding defaultOptions
 
 -- | A 'Source' is a textual content which may be
 -- represented in JSON either as a single string
@@ -276,8 +281,8 @@ instance ToJSON (Cell NbV3) where
 -- in v3, certain metadata fields occur in the main cell object.
 -- e.g. collapsed, language.
 metadataToV3Pairs :: JSONMeta -> [Aeson.Pair]
-metadataToV3Pairs meta =
-  ("metadata" .= M.fromList regMeta) : map toPair extraMeta
+metadataToV3Pairs (JSONMeta meta) =
+  ("metadata" .= JSONMeta (M.fromList regMeta)) : map toPair extraMeta
   where (extraMeta, regMeta) = partition isExtraMeta $ M.toList meta
         toPair (k,v) = (fromString (T.unpack k)) .= v
         isExtraMeta (k,_) = k `Set.member` v3MetaInMainCell
@@ -289,7 +294,7 @@ parseV3Metadata :: Aeson.Object -> Aeson.Parser JSONMeta
 parseV3Metadata v = do
   meta <- v .:? "metadata" .!= mempty
   vm <- parseJSON (Object v)
-  let extraMeta = M.restrictKeys vm v3MetaInMainCell
+  let extraMeta = JSONMeta (M.restrictKeys vm v3MetaInMainCell)
   return (meta <> extraMeta)
 
 -- | Information about the type of a notebook cell, plus
