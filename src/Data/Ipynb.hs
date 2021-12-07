@@ -29,7 +29,7 @@ notebooks can be polymorphic, operating on `Notebook a`.
 module Data.Ipynb ( Notebook(..)
                   , NbV3
                   , NbV4
-                  , JSONMeta
+                  , JSONMeta(..)
                   , Cell(..)
                   , Source(..)
                   , CellType(..)
@@ -37,6 +37,7 @@ module Data.Ipynb ( Notebook(..)
                   , MimeType
                   , MimeData(..)
                   , MimeBundle(..)
+                  , MimeAttachments(..)
                   , breakLines
                   )
 where
