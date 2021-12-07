@@ -168,13 +168,20 @@ instance FromJSON Source where
 instance ToJSON Source where
   toJSON (Source ts) = toJSON ts
 
+newtype MimeAttachments = MimeAttachments (M.Map Text MimeBundle)
+  deriving (Show, Eq, Ord, Generic, Semigroup, Monoid, FromJSON)
+
+instance ToJSON MimeAttachments where
+   toJSON = genericToJSON defaultOptions
+   toEncoding = genericToEncoding defaultOptions
+
 -- | A Jupyter notebook cell.
 data Cell a = Cell
   { cellType        :: CellType a
   , cellId          :: Maybe Text
   , cellSource      :: Source
   , cellMetadata    :: JSONMeta
-  , cellAttachments :: Maybe (M.Map Text MimeBundle)
+  , cellAttachments :: Maybe MimeAttachments
 } deriving (Show, Eq, Generic)
 
 instance FromJSON (Cell NbV4) where
