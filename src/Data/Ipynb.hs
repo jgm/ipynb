@@ -49,7 +49,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Base64 as Base64
 import Data.Char (isSpace)
-import Data.List (partition)
+import Data.List (partition, sortOn)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.Text (Text)
@@ -478,6 +478,21 @@ data MimeData =
   | JsonData Value
   deriving (Show, Eq, Ord, Generic)
 
+instance ToJSON MimeData where
+  toJSON = toJSON . mimeDataToValue
+  toEncoding = toEncoding . mimeDataToValue
+
+mimeDataToValue :: MimeData -> Value
+mimeDataToValue (BinaryData bs) =
+  toJSON .
+    TE.decodeUtf8 .
+    (<> "\n") .
+    B.intercalate "\n" .  chunksOf 76 .
+    Base64.encode
+    $ bs
+mimeDataToValue (JsonData v) = v
+mimeDataToValue (TextualData t) = toJSON (breakLines t)
+
 type MimeType = Text
 
 -- | A 'MimeBundle' wraps a map from mime types to mime data.
@@ -505,16 +520,10 @@ pairToMimeData (mt, v) = do
 
 instance ToJSON MimeBundle where
   toJSON (MimeBundle m) =
-    let mimeBundleToValue (BinaryData bs) =
-          toJSON .
-            TE.decodeUtf8 .
-            (<> "\n") .
-            B.intercalate "\n" .  chunksOf 76 .
-            Base64.encode
-            $ bs
-        mimeBundleToValue (JsonData v) = v
-        mimeBundleToValue (TextualData t) = toJSON (breakLines t)
-    in  toJSON $ M.map mimeBundleToValue m
+    toJSON m
+  toEncoding (MimeBundle m) =  -- ensure deterministic (sorted) order
+    pairs $ mconcat $ map (\(k,v) -> (fromString (T.unpack k) Aeson..= v))
+                          (sortOn fst (M.toList m))
 
 chunksOf :: Int -> ByteString -> [ByteString]
 chunksOf k s
