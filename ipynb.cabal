@@ -27,7 +27,7 @@ library
                      containers >= 0.5.8,
                      unordered-containers,
                      base64-bytestring,
-                     aeson,
+                     aeson >= 1.5.2.0,
                      bytestring,
                      text
   if impl(ghc < 8.0)
