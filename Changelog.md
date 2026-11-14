@@ -1,10 +1,23 @@
 # Revision history for ipynb
 
-## Unreleased
+## 0.3 -- 2026-11-14
 
-* Change type of `executeCount` from `Int` to `Maybe Int` [API change].
+* Allow null `execution_count` in execute_result [API change].
   The v4 schema allows `execution_count` to be null in an
-  `execute_result` output; previously such notebooks failed to parse.
+  execute_result output, but such notebooks failed to parse.
+  Change the type of `executeCount` from Int to Maybe Int.
+
+* Don't drop svg, json, pdf, and other mime data in v3 outputs.
+
+* Keep non-textual mime data as JsonData instead of failing.
+
+* Only base64-decode mime data for binary mime types.
+
+* Remove unneeded CPP, require aeson >= 2 and base >= 4.11.
+
+* Update Cabal file to cabal version 2.0
+
+* Remove stack.yaml.
 
 ## 0.2 -- 2022-01-11
 
