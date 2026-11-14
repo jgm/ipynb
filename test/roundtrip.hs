@@ -59,7 +59,42 @@ mimeTests =
       parseV4Data "{\"application/vnd.foo\":{\"a\":1}}" @?=
         Right (MimeBundle (M.fromList
           [("application/vnd.foo", JsonData (object ["a" .= (1 :: Int)]))]))
+  , testCase "v3 svg, json, and pdf data is read" $
+      parseV3Data
+        "\"svg\":\"<svg/>\",\"json\":{\"a\":1},\"pdf\":\"dGVzdA==\"" @?=
+        Right (MimeBundle (M.fromList
+          [ ("image/svg+xml", TextualData "<svg/>")
+          , ("application/json", JsonData (object ["a" .= (1 :: Int)]))
+          , ("application/pdf", BinaryData "test") ]))
+  , testCase "v3 mime data survives write and read" $ do
+      let bundle = MimeBundle (M.fromList
+            [ ("text/plain", TextualData "hi")
+            , ("image/svg+xml", TextualData "<svg/>")
+            , ("application/json", JsonData (object ["a" .= (1 :: Int)]))
+            , ("application/pdf", BinaryData "test")
+            , ("application/vnd.foo", TextualData "foo") ])
+          nb :: Notebook NbV3
+          nb = Notebook mempty (3, 0)
+                 [Cell (Code (Just 1) [DisplayData bundle mempty])
+                       Nothing (Source ["x"]) mempty Nothing]
+      fmap (map cellType . notebookCells)
+        (eitherDecode (encode nb) :: Either String (Notebook NbV3)) @?=
+        Right (map cellType (notebookCells nb))
   ]
+
+-- Like parseV4Data, but for a v3 notebook; the argument is a
+-- comma-separated sequence of JSON fields to add to the display_data
+-- output.
+parseV3Data :: BL.ByteString -> Either String MimeBundle
+parseV3Data fields = do
+  (nb :: Notebook NbV3) <- eitherDecode $
+    "{\"nbformat\":3,\"nbformat_minor\":0,\"metadata\":{},\"worksheets\":" <>
+    "[{\"cells\":[{\"cell_type\":\"code\",\"input\":\"\",\"metadata\":{}," <>
+    "\"outputs\":[{\"output_type\":\"display_data\",\"metadata\":{}," <>
+    fields <> "}]}]}]}"
+  case map cellType (notebookCells nb) of
+    [Code{ codeOutputs = [DisplayData{ displayData = d }] }] -> Right d
+    _ -> Left "unexpected notebook structure"
 
 isIpynb :: FilePath -> Bool
 isIpynb fp = takeExtension fp == ".ipynb"

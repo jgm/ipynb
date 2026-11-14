@@ -56,6 +56,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics
 import Prelude
+import qualified Data.Aeson.Key as Key
 import qualified Data.Aeson.KeyMap as KM
 import Data.String
 import qualified Data.Set as Set
@@ -377,20 +378,33 @@ instance FromJSON (Output NbV3) where
           <*> v .: "traceback"
       _ -> fail $ "Unknown object_type " ++ ty
 
--- Remove keys output_type, prompt_number, metadata;
--- change short keys like text and png to mime types.
+-- | Short keys used for mime data in v3 outputs, with corresponding
+-- mime types.  See the v3 schema in nbformat.
+v3MimeKeys :: [(Text, MimeType)]
+v3MimeKeys =
+  [ ("text", "text/plain")
+  , ("latex", "text/latex")
+  , ("html", "text/html")
+  , ("png", "image/png")
+  , ("jpeg", "image/jpeg")
+  , ("svg", "image/svg+xml")
+  , ("pdf", "application/pdf")
+  , ("json", "application/json")
+  , ("javascript", "application/javascript")
+  ]
+
+-- Change short keys like text and png to mime types, keeping
+-- keys that are already mime types and removing other keys
+-- (output_type, prompt_number, metadata).
 extractNbV3Data :: Aeson.Object -> Aeson.Parser MimeBundle
 extractNbV3Data v = do
-  let go ("output_type", _)   = Nothing
-      go ("metadata", _)      = Nothing
-      go ("prompt_number", _) = Nothing
-      go ("text", x)          = Just ("text/plain", x)
-      go ("latex", x)         = Just ("text/latex", x)
-      go ("html", x)          = Just ("text/html", x)
-      go ("png", x)           = Just ("image/png", x)
-      go ("jpeg", x)          = Just ("image/jpeg", x)
-      go ("javascript", x)    = Just ("application/javascript", x)
-      go (_, _)               = Nothing -- TODO complete list? where documented?
+  let go (k, x) =
+        let k' = Key.toText k
+        in  case lookup k' v3MimeKeys of
+              Just mt -> Just (Key.fromText mt, x)
+              Nothing
+                | "/" `T.isInfixOf` k' -> Just (k, x)
+                | otherwise -> Nothing
   parseJSON (Object . KM.fromList . mapMaybe go . KM.toList $ v)
 
 instance ToJSON (Output NbV4) where
@@ -449,13 +463,8 @@ adjustV3DataFields (Object hm) =
       (\(k, v) -> KM.insert (modKey k) v) hm
       (KM.toList dm)
     _ -> Object hm
-  where  modKey "text/plain"             = "text"
-         modKey "text/latex"             = "latex"
-         modKey "text/html"              = "html"
-         modKey "image/jpeg"             = "jpeg"
-         modKey "image/png"              = "png"
-         modKey "application/javascript" = "javascript"
-         modKey x                        = x
+  where  v3Keys = [(mt, k) | (k, mt) <- v3MimeKeys]
+         modKey k = maybe k Key.fromText (lookup (Key.toText k) v3Keys)
 adjustV3DataFields x = x
 
 -- | Data in an execution result or display data cell.
