@@ -497,13 +497,24 @@ pairToMimeData (mt, v)
     "+json" `T.isSuffixOf` mt = return (mt, JsonData v)
 pairToMimeData (mt, v) = do
   t <- parseJSON v <|> (mconcat <$> parseJSON v)
-  let mimeprefix = T.takeWhile (/='/') mt
-  if mimeprefix == "text"
-     then return (mt, TextualData t)
-     else
+  if isBinaryMimeType mt
+     then
        case Base64.decode (TE.encodeUtf8 (T.filter (not . isSpace) t)) of
             Left _  -> return (mt, TextualData t)
             Right b -> return (mt, BinaryData b)
+     else return (mt, TextualData t)
+
+-- Mime types whose data is base64-encoded in ipynb.  We don't try
+-- to guess based on the content, since textual data (e.g. JavaScript)
+-- can happen to be valid base64.
+isBinaryMimeType :: MimeType -> Bool
+isBinaryMimeType mt =
+  case T.breakOn "/" mt of
+    ("image", "/svg+xml") -> False
+    ("image", _)          -> True
+    ("audio", _)          -> True
+    ("video", _)          -> True
+    _                     -> mt == "application/pdf"
 
 instance ToJSON MimeBundle where
   toJSON (MimeBundle m) =
