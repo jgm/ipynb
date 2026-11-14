@@ -27,6 +27,20 @@ main = do
   defaultMain $ testGroup "tests"
     [ testGroup "round-trip tests" $ map rtTest fs
     , testGroup "mime data tests" mimeTests
+    , testCase "execute_result with null execution_count" $ do
+        let inRaw =
+              "{\"nbformat\":4,\"nbformat_minor\":5,\"metadata\":{}," <>
+              "\"cells\":[{\"cell_type\":\"code\",\"metadata\":{}," <>
+              "\"source\":\"\",\"execution_count\":null,\"outputs\":" <>
+              "[{\"output_type\":\"execute_result\",\"execution_count\":null," <>
+              "\"data\":{\"text/plain\":\"1\"},\"metadata\":{}}]}]}"
+        (nb :: Notebook NbV4) <- either error return $ eitherDecode inRaw
+        case map cellType (notebookCells nb) of
+          [Code{ codeOutputs = [ExecuteResult{ executeCount = ec }] }] ->
+            ec @?= Nothing
+          _ -> assertFailure "unexpected notebook structure"
+        (nb' :: Notebook NbV4) <- either error return $ eitherDecode (encode nb)
+        nb' @?= nb
     ]
 
 -- Parse a v4 notebook with a single code cell whose only output

@@ -1,5 +1,11 @@
 # Revision history for ipynb
 
+## Unreleased
+
+* Change type of `executeCount` from `Int` to `Maybe Int` [API change].
+  The v4 schema allows `execution_count` to be null in an
+  `execute_result` output; previously such notebooks failed to parse.
+
 ## 0.2 -- 2022-01-11
 
 * Make MimeAttachments a newtype, and export it [API change].
