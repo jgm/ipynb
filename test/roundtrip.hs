@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 import Control.Monad (unless)
-import Data.Aeson (Value (..), eitherDecode, encode)
+import Data.Aeson (Value (..), eitherDecode, encode, object, (.=))
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString as B
 import Data.Ipynb
@@ -55,6 +55,10 @@ mimeTests =
       parseV4Data "{\"image/svg+xml\":[\"<svg>\\n\",\"</svg>\"]}" @?=
         Right (MimeBundle (M.fromList
           [("image/svg+xml", TextualData "<svg>\n</svg>")]))
+  , testCase "non-textual data under a non-json mime type is kept as json" $
+      parseV4Data "{\"application/vnd.foo\":{\"a\":1}}" @?=
+        Right (MimeBundle (M.fromList
+          [("application/vnd.foo", JsonData (object ["a" .= (1 :: Int)]))]))
   ]
 
 isIpynb :: FilePath -> Bool

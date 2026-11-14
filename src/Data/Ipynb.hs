@@ -495,14 +495,15 @@ pairToMimeData :: (MimeType, Value) -> Aeson.Parser (MimeType, MimeData)
 pairToMimeData (mt, v)
   | mt == "application/json" ||
     "+json" `T.isSuffixOf` mt = return (mt, JsonData v)
-pairToMimeData (mt, v) = do
-  t <- parseJSON v <|> (mconcat <$> parseJSON v)
-  if isBinaryMimeType mt
-     then
-       case Base64.decode (TE.encodeUtf8 (T.filter (not . isSpace) t)) of
-            Left _  -> return (mt, TextualData t)
-            Right b -> return (mt, BinaryData b)
-     else return (mt, TextualData t)
+pairToMimeData (mt, v) =
+  case Aeson.parseMaybe (\x -> parseJSON x <|> (mconcat <$> parseJSON x)) v of
+    Nothing -> return (mt, JsonData v) -- not a string or list of strings
+    Just t
+      | isBinaryMimeType mt ->
+          case Base64.decode (TE.encodeUtf8 (T.filter (not . isSpace) t)) of
+               Left _  -> return (mt, TextualData t)
+               Right b -> return (mt, BinaryData b)
+      | otherwise -> return (mt, TextualData t)
 
 -- Mime types whose data is base64-encoded in ipynb.  We don't try
 -- to guess based on the content, since textual data (e.g. JavaScript)
