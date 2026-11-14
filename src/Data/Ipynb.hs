@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                        #-}
 {-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE FlexibleInstances          #-}
@@ -57,15 +56,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import GHC.Generics
 import Prelude
-#if MIN_VERSION_base(4,11,0)
-#else
-import Data.Semigroup
-#endif
-#if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.KeyMap as KM
-#else
-import qualified Data.HashMap.Strict as KM
-#endif
 import Data.String
 import qualified Data.Set as Set
 
@@ -88,10 +79,6 @@ instance Semigroup (Notebook a) where
 
 instance Monoid (Notebook a) where
   mempty = Notebook mempty (0, 0) mempty
-#if MIN_VERSION_base(4,11,0)
-#else
-  mappend = (<>)
-#endif
 
 instance FromJSON (Notebook NbV4) where
   parseJSON = withObject "Notebook" $ \v -> do

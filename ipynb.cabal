@@ -26,7 +26,7 @@ library
                      containers >= 0.5.8,
                      unordered-containers,
                      base64-bytestring,
-                     aeson >= 1.5.2.0,
+                     aeson >= 2.0,
                      bytestring,
                      text
   hs-source-dirs:    src
