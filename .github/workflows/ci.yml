@@ -11,25 +11,25 @@ jobs:
       matrix:
         versions:
           - ghc: '8.2.2'
-            cabal: '2.4'
+            cabal: 'latest'
           - ghc: '8.4.4'
-            cabal: '2.4'
+            cabal: 'latest'
           - ghc: '8.6.5'
-            cabal: '2.4'
+            cabal: 'latest'
           - ghc: '8.8.1'
-            cabal: '3.0'
+            cabal: 'latest'
           - ghc: '8.10.4'
-            cabal: '3.2'
+            cabal: 'latest'
           - ghc: '9.0.1'
-            cabal: '3.4'
+            cabal: 'latest'
             cabalopts: '--constraint "aeson > 2"'
           - ghc: '9.0.1'
-            cabal: '3.4'
+            cabal: 'latest'
             cabalopts: '--constraint "aeson < 2"'
     steps:
     - uses: actions/checkout@v1
     - name: Install recent cabal/ghc
-      uses: haskell/actions/setup@v1
+      uses: haskell-actions/setup@v2
       with:
         ghc-version: ${{ matrix.versions.ghc }}
         cabal-version: ${{ matrix.versions.cabal }}
